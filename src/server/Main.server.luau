@@ -7,6 +7,7 @@ local order = {
 	"DataService",
 	"CharacterService",
 	"LevelingService",
+	"StatsService",
 	"CombatService",
 	"EnergyService",
 	"LoadoutService",

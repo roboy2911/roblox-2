@@ -14,6 +14,7 @@ Build order steps from the design doc:
 - [x] **5. First gem:** Ember Gem (Fireball, Flame Dash, Fire Ring) with energy and cooldowns; found under trees or bought from the Gem Merchant.
 - [x] **6. Weapons and shop:** Iron Sword and Battle Axe from Blacksmith Torvin; slots 1 Style, 2 Weapon, 3 Gem.
 - [x] **7. First boss:** Bandit Captain (Lv. 25) with Cleave and Leap Slam, boss HP bar, quest from Bram.
+- [x] **8. Stats menu:** spend stat points (M or the Stats button), reset for 50 gold per level.
 
 ## Setup
 

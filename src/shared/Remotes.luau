@@ -41,6 +41,7 @@ return {
 	QuestDialog = remote("QuestDialog"), -- server -> player: open a quest giver's dialog
 	QuestAction = remote("QuestAction"), -- client -> server: accept or abandon a quest
 	SelectSlot = remote("SelectSlot"), -- client -> server: pressed 1/2/3
+	StatAction = remote("StatAction"), -- client -> server: spend points or reset stats
 	UseAbility = remote("UseAbility"), -- client -> server: Z/X/C pressed (with aim)
 	AbilityFx = remote("AbilityFx"), -- server -> all: show an ability (fireball, dash, ring, gem eaten)
 	ShopDialog = remote("ShopDialog"), -- server -> player: open a shop

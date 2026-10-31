@@ -23,6 +23,7 @@ local GemService = require(script.Parent.GemService)
 local GemSpawner = require(script.Parent.GemSpawner)
 local LoadoutService = require(script.Parent.LoadoutService)
 local EnemyService = require(script.Parent.EnemyService)
+local StatsService = require(script.Parent.StatsService)
 
 local DevCommands = {}
 
@@ -69,6 +70,7 @@ local commands = {
 		DataService.Reset(player)
 		LevelingService.Sync(player)
 		QuestService.Sync(player)
+		StatsService.Sync(player)
 		CharacterService.Refresh(player, true)
 		Remotes.Notify:FireClient(player, "Data reset to level 1")
 	end,

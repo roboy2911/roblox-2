@@ -16,6 +16,20 @@ end
 -- Stats a player can put points into. Order is the order shown in menus.
 Leveling.StatNames = { "Strength", "Weapon", "GemPower", "Defense", "Vitality" }
 
+-- What each stat does, for the stats menu.
+Leveling.StatInfo = {
+	Strength = { DisplayName = "Strength", Effect = "+1% combat style damage" },
+	Weapon = { DisplayName = "Weapon", Effect = "+1% weapon damage" },
+	GemPower = { DisplayName = "Gem Power", Effect = "+1% gem damage" },
+	Defense = { DisplayName = "Defense", Effect = "-0.5% damage taken (max 50%)" },
+	Vitality = { DisplayName = "Vitality", Effect = "+10 HP, +5 energy" },
+}
+
+-- Resetting stats gives all points back for gold.
+function Leveling.ResetCost(level: number): number
+	return 50 * level
+end
+
 -- What a brand new player starts with. New fields added here are filled in
 -- for old saves automatically.
 Leveling.DefaultData = {
