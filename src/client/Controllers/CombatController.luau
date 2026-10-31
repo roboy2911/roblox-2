@@ -15,6 +15,7 @@ local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local CombatFolder = script.Parent.Parent.Combat
 local Animator = require(CombatFolder.Animator)
 local HitEffects = require(CombatFolder.HitEffects)
+local Movement = require(CombatFolder.Movement)
 
 local player = Players.LocalPlayer
 local style = Combat.Styles[Combat.DefaultStyle]
@@ -27,7 +28,6 @@ local CombatController = {}
 local comboIndex = 0
 local lastSwing = 0
 local readyAt = 0
-local facingToken = 0
 
 local function flat(v: Vector3): Vector3
 	return v * Vector3.new(1, 0, 1)
@@ -56,41 +56,6 @@ local function findAimTarget(rootPart: BasePart): (Model?, number)
 	return best, bestDistance
 end
 
--- Faces a direction and keeps facing it for a moment, even while walking.
-local function faceDirection(humanoid: Humanoid, rootPart: BasePart, direction: Vector3, hold: number)
-	rootPart.CFrame = CFrame.lookAt(rootPart.Position, rootPart.Position + direction)
-	facingToken += 1
-	local token = facingToken
-	humanoid.AutoRotate = false
-	task.delay(hold, function()
-		if token == facingToken and humanoid.Parent then
-			humanoid.AutoRotate = true
-		end
-	end)
-end
-
--- Short burst forward along the ground.
-local function lunge(rootPart: BasePart, direction: Vector3, speed: number, seconds: number)
-	if seconds <= 0 then
-		return
-	end
-	local attachment = Instance.new("Attachment")
-	attachment.Name = "LungeAttachment"
-	attachment.Parent = rootPart
-	local velocity = Instance.new("LinearVelocity")
-	velocity.Attachment0 = attachment
-	velocity.RelativeTo = Enum.ActuatorRelativeTo.World
-	velocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Line
-	velocity.LineDirection = direction
-	velocity.LineVelocity = speed
-	velocity.MaxForce = 60000
-	velocity.Parent = rootPart
-	task.delay(seconds, function()
-		velocity:Destroy()
-		attachment:Destroy()
-	end)
-end
-
 local function tryAttack()
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
@@ -115,7 +80,7 @@ local function tryAttack()
 	if target and distance > 0.5 then
 		direction = flat(target:GetPivot().Position - rootPart.Position).Unit
 	end
-	faceDirection(humanoid, rootPart, direction, move.HitDelay + 0.2)
+	Movement.Face(humanoid, rootPart, direction, move.HitDelay + 0.2)
 
 	-- Tell the server first, so a visual glitch can never block the attack.
 	Remotes.Attack:FireServer(direction)
@@ -127,7 +92,7 @@ local function tryAttack()
 		local room = distance - STOP_LUNGE_DISTANCE
 		lungeTime = math.clamp(room / move.LungeSpeed, 0, lungeTime)
 	end
-	lunge(rootPart, direction, move.LungeSpeed, lungeTime)
+	Movement.Burst(rootPart, direction, move.LungeSpeed, lungeTime)
 end
 
 local function onHit(attacker: Player, target: Model, amount: number, killed: boolean, heavy: boolean)

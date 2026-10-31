@@ -1,5 +1,5 @@
--- Makes quest givers feel alive: the head turns to look at you when you're
--- close, and a "!" floats over them while you don't have a quest.
+-- Makes NPCs feel alive: the head turns to look at you when you're close.
+-- Quest givers also get a "!" while you don't have a quest.
 
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
@@ -7,13 +7,14 @@ local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 
+local NPC_TAG = "Npc"
 local GIVER_TAG = "QuestGiver"
 local LOOK_DISTANCE = 22
 local MAX_TURN = math.rad(70)
 
 local NpcController = {}
 
-type Npc = { Model: Model, Neck: Motor6D?, Marker: BillboardGui, Yaw: number }
+type Npc = { Model: Model, Neck: Motor6D?, Marker: BillboardGui?, Yaw: number }
 local npcs: { [Model]: Npc } = {}
 
 local function add(model: Instance)
@@ -22,6 +23,12 @@ local function add(model: Instance)
 	end
 	local head = model:WaitForChild("Head", 5)
 	local neck = head and head:FindFirstChild("Joint")
+
+	local neckJoint = neck and neck:IsA("Motor6D") and neck or nil
+	if not CollectionService:HasTag(model, GIVER_TAG) then
+		npcs[model] = { Model = model, Neck = neckJoint, Marker = nil, Yaw = 0 }
+		return
+	end
 
 	local marker = Instance.new("BillboardGui")
 	marker.Size = UDim2.fromOffset(60, 70)
@@ -46,7 +53,7 @@ local function add(model: Instance)
 		marker.StudsOffsetWorldSpace += Vector3.new(0, offset, 0)
 	end
 
-	npcs[model] = { Model = model, Neck = neck and neck:IsA("Motor6D") and neck or nil, Marker = marker, Yaw = 0 }
+	npcs[model] = { Model = model, Neck = neckJoint, Marker = marker, Yaw = 0 }
 end
 
 local function step(dt: number)
@@ -54,16 +61,21 @@ local function step(dt: number)
 	local hasQuest = (player:GetAttribute("QuestId") or "") ~= ""
 	local t = os.clock()
 	for model, npc in npcs do
+		local marker = npc.Marker
 		if not model.Parent then
-			npc.Marker:Destroy()
+			if marker then
+				marker:Destroy()
+			end
 			npcs[model] = nil
 			continue
 		end
-		npc.Marker.Enabled = not hasQuest
-		-- Bob the "!" gently.
-		local label = npc.Marker:FindFirstChildWhichIsA("TextLabel")
-		if label then
-			label.Position = UDim2.fromOffset(0, math.sin(t * 3) * 4)
+		if marker then
+			marker.Enabled = not hasQuest
+			-- Bob the "!" gently.
+			local label = marker:FindFirstChildWhichIsA("TextLabel")
+			if label then
+				label.Position = UDim2.fromOffset(0, math.sin(t * 3) * 4)
+			end
 		end
 
 		if npc.Neck then
@@ -80,10 +92,10 @@ local function step(dt: number)
 end
 
 function NpcController.Start()
-	CollectionService:GetInstanceAddedSignal(GIVER_TAG):Connect(function(model)
+	CollectionService:GetInstanceAddedSignal(NPC_TAG):Connect(function(model)
 		task.spawn(add, model)
 	end)
-	for _, model in CollectionService:GetTagged(GIVER_TAG) do
+	for _, model in CollectionService:GetTagged(NPC_TAG) do
 		task.spawn(add, model)
 	end
 	RunService.RenderStepped:Connect(step)

@@ -2,7 +2,7 @@
 
     python blender/effects.py [output_dir]
 
-Writes FxSpark.png, FxDust.png, FxGlow.png, FxRing.png, FxTrail.png.
+Writes FxSpark.png, FxDust.png, FxGlow.png, FxRing.png, FxTrail.png, FxFlame.png.
 """
 
 import math
@@ -73,6 +73,16 @@ def trail(u, v):
     return 1, 1, 1, across ** 1.5 * wisps * (1 - t * 0.3)
 
 
+def flame(u, v):
+    # Teardrop flame, wide at the bottom, licking up to a point.
+    y = (v + 1) / 2  # 0 bottom, 1 top
+    width = 0.75 * (1 - y) ** 0.6 * min(1, y * 4 + 0.3)
+    wobble = noise.noise(Vector((u * 2, y * 3, 2.0))) * 0.15
+    inside = max(0, 1 - abs(u + wobble) / max(width, 0.01))
+    flicker = 0.75 + 0.25 * noise.noise(Vector((u * 6, y * 6, 4.0)))
+    return 1, 1, 1, inside ** 0.8 * flicker * (1 - y) ** 0.3
+
+
 if __name__ == "__main__":
     out = c.out_dir()
     c.bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -81,3 +91,4 @@ if __name__ == "__main__":
     save("FxGlow", 128, 128, glow, out)
     save("FxRing", 256, 256, ring, out)
     save("FxTrail", 256, 64, trail, out)
+    save("FxFlame", 128, 128, flame, out)

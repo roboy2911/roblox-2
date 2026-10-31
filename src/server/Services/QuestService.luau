@@ -12,13 +12,12 @@ local CollectionService = game:GetService("CollectionService")
 local Enemies = require(ReplicatedStorage.Shared.Config.Enemies)
 local Quests = require(ReplicatedStorage.Shared.Config.Quests)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
-local AssetService = require(script.Parent.AssetService)
 local DataService = require(script.Parent.DataService)
 local LevelingService = require(script.Parent.LevelingService)
+local NpcBuilder = require(script.Parent.NpcBuilder)
 local Props = require(script.Parent.Props)
 
 local GIVER_TAG = "QuestGiver"
-local GIVER_HEIGHT = 5.8
 
 local QuestService = {}
 
@@ -91,11 +90,7 @@ local function dialogFor(player: Player, giverId: string)
 end
 
 local function isNearGiver(player: Player, giverId: string): boolean
-	local model = giverModels[giverId]
-	local character = player.Character
-	local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
-	return model ~= nil and root ~= nil
-		and (root.Position - model:GetPivot().Position).Magnitude <= Quests.TalkDistance + 4
+	return NpcBuilder.IsNear(player, giverModels[giverId], Quests.TalkDistance + 4)
 end
 
 local function onAction(player: Player, action: any, giverId: any, questId: any)
@@ -163,80 +158,29 @@ function QuestService.OnEnemyKilled(player: Player, enemyType: string?)
 	end
 end
 
--- Builds the giver: textured model, a head that can turn, and a talk prompt.
+-- Builds the giver (via NpcBuilder) and a little market corner around them.
 local function spawnGiver(giverId: string, giver)
 	local folder = Instance.new("Folder")
 	folder.Name = giver.DisplayName
 	folder.Parent = workspace
 
-	local y = Props.GroundY(giver.Position)
-	local position = Vector3.new(giver.Position.X, y, giver.Position.Z)
-	local toSpawn = (Vector3.zero - position) * Vector3.new(1, 0, 1)
-	toSpawn = if toSpawn.Magnitude > 0.01 then toSpawn.Unit else -Vector3.zAxis
-
-	local model = AssetService.Model("QuestGiver")
-	if not model then
-		-- Stand-in: robe block and a head.
-		model = Instance.new("Model")
-		local robe = Instance.new("Part")
-		robe.Name = "Body"
-		robe.Size = Vector3.new(2, 4.6, 1.4)
-		robe.CFrame = CFrame.new(0, 2.3, 0)
-		robe.Color = Color3.fromRGB(56, 92, 51)
-		robe.Material = Enum.Material.SmoothPlastic
-		robe.Anchored = true
-		robe.Parent = model
-		local head = Instance.new("Part")
-		head.Name = "Head"
-		head.Shape = Enum.PartType.Ball
-		head.Size = Vector3.new(1.1, 1.1, 1.1)
-		head.CFrame = CFrame.new(0, 5.1, 0)
-		head.Color = Color3.fromRGB(217, 163, 128)
-		head.Material = Enum.Material.SmoothPlastic
-		head.Anchored = true
-		head.Parent = model
-		model.WorldPivot = CFrame.new()
-	end
-	model.Name = giver.DisplayName
-	local _, size = model:GetBoundingBox()
-	model:ScaleTo(model:GetScale() * GIVER_HEIGHT / size.Y)
-
-	-- Neck joint so clients can turn the head toward players.
-	local body = model:FindFirstChild("Body") :: BasePart
-	local head = model:FindFirstChild("Head") :: BasePart
-	if body and head then
-		local neck = CFrame.new(head.Position - Vector3.new(0, head.Size.Y * 0.4, 0))
-		head.Anchored = false
-		head.CanCollide = false
-		local joint = Instance.new("Motor6D")
-		joint.Name = "Joint"
-		joint.Part0 = body
-		joint.Part1 = head
-		joint.C0 = body.CFrame:ToObjectSpace(neck)
-		joint.C1 = head.CFrame:ToObjectSpace(neck)
-		joint.Parent = head
-	end
-
-	model:PivotTo(CFrame.lookAt(position, position + toSpawn))
+	local model, position = NpcBuilder.Spawn({
+		Model = "QuestGiver",
+		DisplayName = giver.DisplayName,
+		Position = giver.Position,
+		Parent = folder,
+		StandInColor = Color3.fromRGB(56, 92, 51),
+		PromptText = "Talk",
+		PromptDistance = Quests.TalkDistance,
+		OnPrompt = function(player)
+			Remotes.QuestDialog:FireClient(player, dialogFor(player, giverId))
+		end,
+	})
 	model:SetAttribute("GiverId", giverId)
-	model:SetAttribute("BarHeight", GIVER_HEIGHT + 1)
-	model.Parent = folder
-	CollectionService:AddTag(model, GIVER_TAG)
+	CollectionService:AddTag(model, GIVER_TAG) -- shows the "!" marker
 	giverModels[giverId] = model
 
-	local prompt = Instance.new("ProximityPrompt")
-	prompt.ActionText = "Talk"
-	prompt.ObjectText = giver.DisplayName
-	prompt.KeyboardKeyCode = Enum.KeyCode.E
-	prompt.HoldDuration = 0
-	prompt.MaxActivationDistance = Quests.TalkDistance
-	prompt.RequiresLineOfSight = false
-	prompt.Parent = body or model:FindFirstChildWhichIsA("BasePart")
-	prompt.Triggered:Connect(function(player)
-		Remotes.QuestDialog:FireClient(player, dialogFor(player, giverId))
-	end)
-
-	-- A little market corner around the giver.
+	local toSpawn = model:GetPivot().LookVector
 	local side = toSpawn:Cross(Vector3.yAxis)
 	Props.Place("Stall", position + side * 7 - toSpawn * 2, toSpawn, folder)
 	Props.Place("Barrel", position - side * 4.5 - toSpawn * 1.5, nil, folder)

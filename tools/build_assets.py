@@ -6,6 +6,7 @@ Run the Blender scripts first so everything is in one folder:
     python blender/rat.py blender/out
     python blender/props.py blender/out
     python blender/characters.py blender/out
+    python blender/nature.py blender/out
     python blender/effects.py blender/out
 Then:
     python tools/build_assets.py blender/out
@@ -27,8 +28,8 @@ MANIFEST = os.path.join(ROOT, "tools", "asset_manifest.json")
 ASSETS_LUAU = os.path.join(ROOT, "src", "shared", "Config", "Assets.luau")
 
 MODELS = ["TrainingDummy", "Rat", "Barrel", "HayBale", "Crate", "Tent", "Campfire", "Sign", "DirtPad", "Stall",
-          "QuestGiver", "BanditThug"]
-IMAGES = ["FxSpark", "FxDust", "FxGlow", "FxRing", "FxTrail"]
+          "QuestGiver", "BanditThug", "GemMerchant", "Tree", "EmberGem"]
+IMAGES = ["FxSpark", "FxDust", "FxGlow", "FxRing", "FxTrail", "FxFlame"]
 
 
 def sha(path):

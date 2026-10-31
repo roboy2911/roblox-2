@@ -8,8 +8,12 @@ local order = {
 	"CharacterService",
 	"LevelingService",
 	"CombatService",
+	"EnergyService",
+	"GemService",
 	"TrainingGround",
 	"QuestService",
+	"MerchantService",
+	"GemSpawner",
 	"EnemyService",
 	"DevCommands",
 }

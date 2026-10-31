@@ -39,9 +39,21 @@
     "id": "134778601747670",
     "sha": "bed10cbfd4e489e958a6f1c434be66c9fb4b1be83711556165e3e4f54e2f4e11"
   },
+  "EmberGem.fbx": {
+    "id": "77433286267541",
+    "sha": "bec1d5bda5288e13e8b5337912982795168ead053c1bf2026697d1e037d38b57"
+  },
+  "EmberGem.png": {
+    "id": "76636422133075",
+    "sha": "ad9e2d47ef55051f819e22fd933f3df6d4988a33ec374346c6853e0fbd6d57c3"
+  },
   "FxDust.png": {
     "id": "106097453113975",
     "sha": "3ec00fd210a85339cdbd705e17bb9dfffffd37b781193bbb47667e9b304aa8f3"
+  },
+  "FxFlame.png": {
+    "id": "76149563240348",
+    "sha": "87daf0b35bb8e458b322f3582acd794365397738397aab7641853d81ced9259e"
   },
   "FxGlow.png": {
     "id": "75232294723661",
@@ -58,6 +70,14 @@
   "FxTrail.png": {
     "id": "93266896755095",
     "sha": "54c390191701fa44e47eeb771844b8067a40b07360ad14d72229181d44a41c35"
+  },
+  "GemMerchant.fbx": {
+    "id": "74160973079783",
+    "sha": "f9c03a363e592602c08a8aee882d1a10bba83fbba58135198962024e6d11186c"
+  },
+  "GemMerchant.png": {
+    "id": "127106430212570",
+    "sha": "2d66419ab11a0ff3fffc32eaefcea57882a10e19217b891da8850082096fe6da"
   },
   "HayBale.fbx": {
     "id": "118647994524199",
@@ -114,5 +134,13 @@
   "TrainingDummy.png": {
     "id": "90332035285806",
     "sha": "fff116921835abf78383db32d38c4db5ae4801051c7fc862adeb42c71cba239a"
+  },
+  "Tree.fbx": {
+    "id": "124147782165793",
+    "sha": "54f83756cc12748cd7c72155b3bcbf6d8d53a8e26c228791da1e076f8fce8d1b"
+  },
+  "Tree.png": {
+    "id": "71192615251219",
+    "sha": "0c032bac67109a5858fa1d006df30773d8b5b2a918fac6eda7f42ae73dfd0f67"
   }
 }

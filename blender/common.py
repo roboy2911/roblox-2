@@ -318,6 +318,45 @@ def stripes(name, a=(0.6, 0.15, 0.12), b=(0.85, 0.75, 0.6), axis="Z", count=8.0)
     return mat
 
 
+def bark(name, color=(0.32, 0.22, 0.14)):
+    """Tree bark: deep vertical furrows."""
+    mat, nodes, links, bsdf = _new_material(name)
+    furrows = _noise(nodes, links, _coords(nodes, links, (6, 6, 0.6)), 3, detail=6, roughness=0.7, distortion=1.5)
+    dark = tuple(c * 0.45 for c in color)
+    light = tuple(min(1, c * 1.3) for c in color)
+    links.new(_ramp(nodes, links, furrows, [(0.35, dark), (0.5, color), (0.65, light)]), bsdf.inputs["Base Color"])
+    return mat
+
+
+def leaves(name, color=(0.22, 0.42, 0.14)):
+    """A leafy canopy: clumps of light and dark green."""
+    mat, nodes, links, bsdf = _new_material(name)
+    vec = _coords(nodes, links)
+    vor = nodes.new("ShaderNodeTexVoronoi")
+    vor.inputs["Scale"].default_value = 6
+    links.new(vec, vor.inputs["Vector"])
+    clumps = _ramp(nodes, links, vor.outputs["Distance"], [(0.0, tuple(min(1, c * 1.35) for c in color)), (0.5, color), (0.9, tuple(c * 0.5 for c in color))])
+    speck = _ramp(nodes, links, _noise(nodes, links, vec, 25, detail=3), [(0.3, tuple(c * 0.7 for c in color)), (0.7, tuple(min(1, c * 1.2) for c in color))])
+    links.new(_mix(nodes, links, clumps, speck, 0.35), bsdf.inputs["Base Color"])
+    return mat
+
+
+def crystal(name, bright=(1.0, 0.85, 0.35), deep=(0.85, 0.22, 0.04)):
+    """A glowing gem: bright core fading to deep color, with facet sparkle."""
+    mat, nodes, links, bsdf = _new_material(name)
+    tex = nodes.new("ShaderNodeTexCoord")
+    grad = nodes.new("ShaderNodeTexGradient")
+    grad.gradient_type = "SPHERICAL"
+    links.new(tex.outputs["Object"], grad.inputs["Vector"])
+    core = _ramp(nodes, links, grad.outputs["Fac"], [(0.0, deep), (0.6, (1.0, 0.5, 0.1)), (1.0, bright)])
+    vor = nodes.new("ShaderNodeTexVoronoi")
+    vor.inputs["Scale"].default_value = 4
+    links.new(tex.outputs["Object"], vor.inputs["Vector"])
+    sparkle = _ramp(nodes, links, vor.outputs["Distance"], [(0.0, (1, 1, 0.9)), (0.12, (1, 1, 1)), (0.2, (0.75, 0.75, 0.75)), (1.0, (0.75, 0.75, 0.75))])
+    links.new(_mix(nodes, links, core, sparkle, 1.0, blend="MULTIPLY"), bsdf.inputs["Base Color"])
+    return mat
+
+
 def solid(name, color, roughness=0.5):
     mat, nodes, links, bsdf = _new_material(name)
     bsdf.inputs["Base Color"].default_value = (*color, 1)

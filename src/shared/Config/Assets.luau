@@ -17,6 +17,9 @@ return {
 		Stall = { Model = 91813507267173, Texture = 133260032043752 },
 		QuestGiver = { Model = 73334953594635, Texture = 76599143144171 },
 		BanditThug = { Model = 91339796650586, Texture = 113424751804607 },
+		GemMerchant = { Model = 74160973079783, Texture = 127106430212570 },
+		Tree = { Model = 124147782165793, Texture = 71192615251219 },
+		EmberGem = { Model = 77433286267541, Texture = 76636422133075 },
 	},
 	Images = {
 		FxSpark = 107224043611000,
@@ -24,5 +27,6 @@ return {
 		FxGlow = 75232294723661,
 		FxRing = 102719264630637,
 		FxTrail = 93266896755095,
+		FxFlame = 76149563240348,
 	},
 }

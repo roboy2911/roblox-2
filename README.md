@@ -11,6 +11,7 @@ Build order steps from the design doc:
 - [x] **2. Basic combat:** Brawler 3-hit click combo, HP bars, three training dummies.
 - [x] **3. Enemies:** Rats that wander, chase, bite, die, drop XP and gold, and respawn.
 - [x] **4. Quests:** Elder Bram in Millbrook gives a Rats quest and a Bandit Thugs quest (Lv. 10+).
+- [x] **5. First gem:** Ember Gem (Fireball, Flame Dash, Fire Ring) with energy and cooldowns; found under trees or bought from the Gem Merchant.
 
 ## Setup
 
@@ -72,6 +73,18 @@ Build order steps from the design doc:
   you reach the count, and your active quest is saved.
 - Studio shortcut: `/level 10` jumps to a level.
 
+**Step 5, Ember Gem**
+
+- Get it: a gem appears under one of the trees around Millbrook 2 minutes after
+  the server starts, then once an hour (everyone gets a message). Hold **E** to
+  eat it. Or buy it from **Gem Merchant Zara** (near Bram) for 5,000 gold.
+- **Z Fireball** (Lv. 1): flies toward your mouse and explodes.
+- **X Flame Dash** (Lv. 25): dash the way you're moving, burning enemies you pass.
+- **C Fire Ring** (Lv. 75): a ring of fire bursts out around you and launches enemies.
+- Moves cost energy (blue bar) and have cooldowns (shown on the ability bar).
+  Locked moves show the level they unlock at.
+- Studio shortcuts: `/gem` (eat Ember), `/gem none`, `/spawngem`, `/level 75`.
+
 ## Project layout
 
 ```
@@ -98,9 +111,11 @@ own baked textures (no Roblox materials or built-in images):
 
 - `blender/common.py`: shared shapes, procedural materials (wood, straw, fur,
   cloth, metal, dirt...) and the bake-and-export step
-- `blender/training_dummy.py`, `rat.py`, `characters.py` (quest giver, bandit),
+- `blender/training_dummy.py`, `rat.py`, `characters.py` (quest giver, gem
+  merchant, bandit),
   `props.py` (barrel, hay bale, crate, tent, campfire, sign, dirt pad, stall),
-  `effects.py` (spark, dust, glow, ring, trail images)
+  `nature.py` (tree, Ember Gem), `effects.py` (spark, dust, glow, ring, trail,
+  flame images)
 
 To rebuild and upload (needs `pip install bpy`, plus `ROBLOX_API_KEY` and
 `ROBLOX_USER_ID` set):

@@ -31,6 +31,7 @@ Leveling.DefaultData = {
 		Vitality = 0,
 	},
 	Quest = { Id = "", Progress = 0 }, -- active quest ("" = none)
+	Gem = "", -- the gem you've eaten ("" = none)
 }
 
 function Leveling.MaxHealth(vitality: number): number

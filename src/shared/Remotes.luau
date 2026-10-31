@@ -39,6 +39,10 @@ return {
 	Reward = remote("Reward"), -- server -> player: XP and gold earned (floating text)
 	QuestDialog = remote("QuestDialog"), -- server -> player: open a quest giver's dialog
 	QuestAction = remote("QuestAction"), -- client -> server: accept or abandon a quest
+	UseAbility = remote("UseAbility"), -- client -> server: Z/X/C pressed (with aim)
+	AbilityFx = remote("AbilityFx"), -- server -> all: show an ability (fireball, dash, ring, gem eaten)
+	ShopDialog = remote("ShopDialog"), -- server -> player: open a shop
+	ShopAction = remote("ShopAction"), -- client -> server: buy something
 	LevelUp = remote("LevelUp"), -- server -> player: new level reached
 	Notify = remote("Notify"), -- server -> player: short message on screen
 }

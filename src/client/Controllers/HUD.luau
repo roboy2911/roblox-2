@@ -14,6 +14,7 @@ local COLORS = {
 	Border = Color3.fromRGB(196, 160, 82),
 	Text = Color3.fromRGB(255, 244, 220),
 	Health = Color3.fromRGB(196, 52, 52),
+	Energy = Color3.fromRGB(70, 140, 230),
 	XP = Color3.fromRGB(232, 186, 64),
 	BarBack = Color3.fromRGB(55, 45, 38),
 }
@@ -101,17 +102,17 @@ function HUD.Start()
 	panel.Name = "StatusPanel"
 	panel.AnchorPoint = Vector2.new(0.5, 1)
 	panel.Position = UDim2.new(0.5, 0, 1, -16)
-	panel.Size = UDim2.new(0.9, 0, 0, 78)
+	panel.Size = UDim2.new(0.9, 0, 0, 96)
 	panel.BackgroundColor3 = COLORS.Panel
 	panel.BackgroundTransparency = 0.25
 	panel.Parent = gui
 	corner(panel, 10)
 	local sizeLimit = Instance.new("UISizeConstraint")
-	sizeLimit.MaxSize = Vector2.new(420, 78)
+	sizeLimit.MaxSize = Vector2.new(420, 96)
 	sizeLimit.Parent = panel
 
 	local levelBadge = Instance.new("Frame")
-	levelBadge.Position = UDim2.fromOffset(8, 8)
+	levelBadge.Position = UDim2.fromOffset(8, 17)
 	levelBadge.Size = UDim2.fromOffset(62, 62)
 	levelBadge.BackgroundColor3 = COLORS.Border
 	levelBadge.Parent = panel
@@ -119,8 +120,18 @@ function HUD.Start()
 	local levelText = label({ Size = UDim2.fromScale(1, 0.62), Position = UDim2.fromScale(0, 0.2), TextScaled = true, Font = Enum.Font.Fantasy, TextColor3 = COLORS.Panel, TextStrokeTransparency = 1, Parent = levelBadge })
 	label({ Size = UDim2.fromScale(1, 0.25), Position = UDim2.fromScale(0, 0.05), Text = "LV", TextSize = 11, TextColor3 = COLORS.Panel, TextStrokeTransparency = 1, Parent = levelBadge })
 
-	local setHealth = bar(panel, UDim2.fromOffset(80, 10), UDim2.new(1, -90, 0, 26), COLORS.Health)
-	local setXP = bar(panel, UDim2.fromOffset(80, 44), UDim2.new(1, -90, 0, 24), COLORS.XP)
+	local setHealth = bar(panel, UDim2.fromOffset(80, 8), UDim2.new(1, -90, 0, 24), COLORS.Health)
+	local setEnergy = bar(panel, UDim2.fromOffset(80, 38), UDim2.new(1, -90, 0, 18), COLORS.Energy)
+	local setXP = bar(panel, UDim2.fromOffset(80, 62), UDim2.new(1, -90, 0, 24), COLORS.XP)
+
+	local function updateEnergy()
+		local energy = player:GetAttribute("Energy") or 0
+		local maxEnergy = player:GetAttribute("MaxEnergy") or 100
+		setEnergy(energy, maxEnergy, ("%d / %d Energy"):format(math.floor(energy), maxEnergy))
+	end
+	player:GetAttributeChangedSignal("Energy"):Connect(updateEnergy)
+	player:GetAttributeChangedSignal("MaxEnergy"):Connect(updateEnergy)
+	updateEnergy()
 
 	local goldText = label({
 		AnchorPoint = Vector2.new(1, 1),

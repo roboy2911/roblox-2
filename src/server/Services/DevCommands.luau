@@ -3,6 +3,8 @@
 --   /gold 1000    give yourself gold
 --   /resetdata    start over at level 1
 --   /level 10     jump to a level
+--   /gem          eat the Ember Gem (/gem none removes it)
+--   /spawngem     put a gem under a tree right now
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -15,6 +17,8 @@ local DataService = require(script.Parent.DataService)
 local LevelingService = require(script.Parent.LevelingService)
 local CharacterService = require(script.Parent.CharacterService)
 local QuestService = require(script.Parent.QuestService)
+local GemService = require(script.Parent.GemService)
+local GemSpawner = require(script.Parent.GemSpawner)
 
 local DevCommands = {}
 
@@ -37,6 +41,18 @@ local commands = {
 			LevelingService.AddXP(player, needed)
 		end
 	end,
+	gem = function(player: Player, _: number?, word: string?)
+		if word == "none" then
+			GemService.SetGem(player, "")
+		else
+			GemService.SetGem(player, "Ember")
+		end
+	end,
+	spawngem = function(player: Player)
+		if not GemSpawner.SpawnGem() then
+			Remotes.Notify:FireClient(player, "A gem is already out there")
+		end
+	end,
 	resetdata = function(player: Player)
 		DataService.Reset(player)
 		LevelingService.Sync(player)
@@ -50,7 +66,7 @@ local function onChatted(player: Player, message: string)
 	local name, arg = string.match(message, "^/(%a+)%s*(%S*)")
 	local command = name and commands[string.lower(name)]
 	if command then
-		command(player, tonumber(arg))
+		command(player, tonumber(arg), string.lower(arg))
 	end
 end
 

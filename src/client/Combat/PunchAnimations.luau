@@ -167,7 +167,162 @@ local function mirror(animation: Animation): Animation
 	}
 end
 
+-- Gem casts -------------------------------------------------------------
+
+local CastFireball: Animation = {
+	Length = 0.48,
+	Trail = { Hand = "RightHand", From = 0.08, To = 0.22 },
+	Keyframes = {
+		{ -- draw the hand back, gathering fire
+			Time = 0.1,
+			Ease = "QuadOut",
+			Pose = {
+				Root = { 0, -10, 0, 0, -0.1, 0.1 },
+				Waist = { 0, -25, 0 },
+				Neck = { 0, 15, 0 },
+				RightShoulder = { 40, -20, 0 },
+				RightElbow = { 100, 0, 0 },
+				LeftShoulder = { 45, -15, 0 },
+				LeftElbow = { 60, 0, 0 },
+			},
+		},
+		{ -- thrust the palm forward
+			Time = 0.17,
+			Ease = "BackOut",
+			Pose = {
+				Root = { 0, 10, 0, 0, -0.1, -0.2 },
+				Waist = { -5, 25, 0 },
+				Neck = { 0, -20, 0 },
+				RightShoulder = { 90, 12, 0 },
+				RightElbow = { 0, 0, 0 },
+				RightWrist = { -35, 0, 0 },
+				LeftShoulder = { 25, -10, -10 },
+				LeftElbow = { 40, 0, 0 },
+				RightHip = { -10, 0, 0 },
+				LeftHip = { 15, 0, 0 },
+				LeftKnee = { -20, 0, 0 },
+			},
+		},
+		{
+			Time = 0.28,
+			Ease = "Linear",
+			Pose = {
+				Root = { 0, 8, 0, 0, -0.1, -0.18 },
+				Waist = { -4, 22, 0 },
+				Neck = { 0, -18, 0 },
+				RightShoulder = { 88, 12, 0 },
+				RightElbow = { 5, 0, 0 },
+				RightWrist = { -30, 0, 0 },
+				LeftShoulder = { 25, -10, -10 },
+				LeftElbow = { 40, 0, 0 },
+				RightHip = { -10, 0, 0 },
+				LeftHip = { 15, 0, 0 },
+				LeftKnee = { -20, 0, 0 },
+			},
+		},
+		{ Time = 0.48, Ease = "SineInOut", Pose = {} },
+	},
+}
+
+local FlameDash: Animation = {
+	Length = 0.5,
+	Keyframes = {
+		{ -- lean hard into the dash, arms swept back
+			Time = 0.06,
+			Ease = "QuadOut",
+			Pose = {
+				Root = { -25, 0, 0, 0, -0.3, 0 },
+				Waist = { -15, 0, 0 },
+				Neck = { 20, 0, 0 },
+				RightShoulder = { -45, 0, 15 },
+				LeftShoulder = { -45, 0, -15 },
+				RightElbow = { 20, 0, 0 },
+				LeftElbow = { 20, 0, 0 },
+				RightHip = { 30, 0, 0 },
+				RightKnee = { -60, 0, 0 },
+				LeftHip = { -20, 0, 0 },
+				LeftKnee = { -20, 0, 0 },
+			},
+		},
+		{
+			Time = 0.3,
+			Ease = "Linear",
+			Pose = {
+				Root = { -22, 0, 0, 0, -0.25, 0 },
+				Waist = { -12, 0, 0 },
+				Neck = { 18, 0, 0 },
+				RightShoulder = { -40, 0, 15 },
+				LeftShoulder = { -40, 0, -15 },
+				RightElbow = { 20, 0, 0 },
+				LeftElbow = { 20, 0, 0 },
+				RightHip = { 25, 0, 0 },
+				RightKnee = { -50, 0, 0 },
+				LeftHip = { -15, 0, 0 },
+				LeftKnee = { -20, 0, 0 },
+			},
+		},
+		{ Time = 0.5, Ease = "SineInOut", Pose = {} },
+	},
+}
+
+local FireRing: Animation = {
+	Length = 0.78,
+	Keyframes = {
+		{ -- crouch and pull the fire in
+			Time = 0.3,
+			Ease = "QuadOut",
+			Pose = {
+				Root = { 0, 0, 0, 0, -0.6, 0 },
+				Waist = { -20, 0, 0 },
+				Neck = { -10, 0, 0 },
+				RightShoulder = { 70, 40, 0 },
+				LeftShoulder = { 70, -40, 0 },
+				RightElbow = { 60, 0, 0 },
+				LeftElbow = { 60, 0, 0 },
+				RightHip = { 40, 0, 0 },
+				LeftHip = { 40, 0, 0 },
+				RightKnee = { -70, 0, 0 },
+				LeftKnee = { -70, 0, 0 },
+			},
+		},
+		{ -- burst up, arms flung wide
+			Time = 0.38,
+			Ease = "BackOut",
+			Pose = {
+				Root = { 0, 0, 0, 0, 0.15, 0 },
+				Waist = { 10, 0, 0 },
+				Neck = { 15, 0, 0 },
+				RightShoulder = { 20, 0, 110 },
+				LeftShoulder = { 20, 0, -110 },
+				RightElbow = { 5, 0, 0 },
+				LeftElbow = { 5, 0, 0 },
+				RightHip = { -5, 0, 0 },
+				LeftHip = { -5, 0, 0 },
+				RightKnee = { -5, 0, 0 },
+				LeftKnee = { -5, 0, 0 },
+			},
+		},
+		{
+			Time = 0.52,
+			Ease = "Linear",
+			Pose = {
+				Root = { 0, 0, 0, 0, 0.1, 0 },
+				Waist = { 8, 0, 0 },
+				Neck = { 12, 0, 0 },
+				RightShoulder = { 20, 0, 100 },
+				LeftShoulder = { 20, 0, -100 },
+				RightElbow = { 10, 0, 0 },
+				LeftElbow = { 10, 0, 0 },
+			},
+		},
+		{ Time = 0.78, Ease = "SineInOut", Pose = {} },
+	},
+}
+
 return {
+	CastFireball = CastFireball,
+	FlameDash = FlameDash,
+	FireRing = FireRing,
 	JabRight = JabRight,
 	JabLeft = mirror(JabRight),
 	UppercutRight = UppercutRight,

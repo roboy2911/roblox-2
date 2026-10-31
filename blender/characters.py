@@ -3,6 +3,7 @@
     python blender/characters.py [output_dir] [Name ...]
 
 QuestGiver parts: Body, Head
+GemMerchant parts: Body, Head
 BanditThug parts: Torso, Head, ArmL, ArmR (holds the sword), LegL, LegR
 """
 
@@ -110,8 +111,49 @@ def bandit_thug():
         ], name)
 
 
+def gem_merchant():
+    robe = c.cloth("Robe", color=(0.36, 0.18, 0.42), weave=70)
+    trim = c.cloth("Trim", color=(0.85, 0.66, 0.25), weave=90)
+    skin = c.skin("Skin", color=(0.8, 0.58, 0.42))
+    hair = c.fur("Mustache", color=(0.25, 0.17, 0.1), streak_axis="X")
+    leather = c.skin("Leather", color=(0.4, 0.25, 0.12))
+    pack = c.cloth("Pack", color=(0.5, 0.38, 0.24), weave=50)
+    eye = c.solid("Eye", (0.05, 0.05, 0.08), 0.2)
+    gem = c.crystal("Gem")
+
+    body = [
+        c.paint(c.cylinder(1.15, 2.9, (0, 0, 1.45), verts=16, top_radius=0.85), robe),
+        c.paint(c.sphere(1, (0, 0, 3.25), scale=(0.95, 0.7, 0.75)), robe),
+        c.paint(c.cylinder(1.17, 0.18, (0, 0, 0.09), verts=16), trim),
+        c.paint(c.torus(0.98, 0.08, (0, 0, 2.5), major_segments=20, minor_segments=6), leather),
+        # Big pack on the back with a rolled blanket on top.
+        c.paint(c.box((1.4, 0.8, 1.6), (0, 0.95, 3.0)), pack),
+        c.paint(c.cylinder(0.3, 1.5, (0, 0.95, 4.0), rot=(0, math.radians(90), 0), verts=10), trim),
+        # Pouch with a gem peeking out.
+        c.paint(c.sphere(0.3, (0.6, -0.75, 2.35), scale=(1, 0.8, 1.1)), leather),
+        c.paint(c.sphere(0.13, (0.6, -0.85, 2.62), segments=8, rings=6), gem),
+    ]
+    for side in (1, -1):
+        body.append(c.paint(c.cylinder(0.27, 1.4, (1.0 * side, -0.15, 3.0), rot=(math.radians(-20), math.radians(-14 * side), 0), verts=10, top_radius=0.22), robe))
+        body.append(c.paint(c.cylinder(0.29, 0.12, (1.07 * side, -0.38, 2.35), rot=(math.radians(-20), 0, 0), verts=10), trim))
+        body.append(c.paint(c.sphere(0.21, (1.08 * side, -0.45, 2.2)), skin))
+    c.join(body, "Body")
+
+    head = [
+        c.paint(c.sphere(0.52, (0, -0.05, 4.2)), skin),
+        c.paint(c.sphere(0.13, (0, -0.56, 4.15), segments=8, rings=6), skin),
+        c.paint(c.cylinder(0.08, 0.7, (0, -0.5, 3.98), rot=(0, math.radians(90), 0), verts=6), hair),
+        # Hood.
+        c.paint(c.sphere(0.6, (0, 0.12, 4.32), scale=(1.05, 1.0, 1.05)), robe),
+        c.paint(c.torus(0.5, 0.06, (0, -0.25, 4.28), rot=(math.radians(80), 0, 0), major_segments=16, minor_segments=4), trim),
+    ]
+    eyes(head, 4.3, -0.47, 0.17, 0.065, eye, hair)
+    c.join(head, "Head")
+
+
 CHARACTERS = {
     "QuestGiver": (quest_giver, {"camera": (4.5, -7.5, 4.2), "target": (0, 0, 2.9), "size": (480, 640)}),
+    "GemMerchant": (gem_merchant, {"camera": (4.5, -7.5, 4.0), "target": (0, 0, 2.6), "size": (480, 640)}),
     "BanditThug": (bandit_thug, {"camera": (5, -7.5, 4.2), "target": (0, -0.6, 2.8), "size": (480, 640)}),
 }
 
