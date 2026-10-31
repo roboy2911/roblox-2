@@ -1,4 +1,4 @@
-"""Uploads a model file (FBX) to Roblox as a Model asset using Open Cloud.
+"""Uploads a model (FBX) or texture (PNG, as a Decal) to Roblox using Open Cloud.
 
 Needs these environment variables:
     ROBLOX_API_KEY   Open Cloud key with asset read + write
@@ -33,13 +33,19 @@ def request(method, url, body=None, headers=None):
 
 
 def upload(path, name, description):
+    is_image = path.lower().endswith(".png")
     meta = {
-        "assetType": "Model",
+        "assetType": "Decal" if is_image else "Model",
         "displayName": name,
         "description": description,
         "creationContext": {"creator": {"userId": str(os.environ["ROBLOX_USER_ID"])}},
     }
-    content_type = "model/fbx" if path.lower().endswith(".fbx") else mimetypes.guess_type(path)[0]
+    if is_image:
+        content_type = "image/png"
+    elif path.lower().endswith(".fbx"):
+        content_type = "model/fbx"
+    else:
+        content_type = mimetypes.guess_type(path)[0]
     boundary = uuid.uuid4().hex
     with open(path, "rb") as f:
         data = f.read()

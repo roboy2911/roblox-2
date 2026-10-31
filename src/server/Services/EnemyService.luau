@@ -1,6 +1,6 @@
 -- Spawns enemies in their spawn areas and runs their behavior:
---   wander around the area -> notice a nearby player -> chase -> bite
---   -> die, give XP and gold -> respawn 15 seconds later
+--   wander around the area -> notice a nearby player -> chase -> attack
+--   -> die, give XP and gold (and quest progress) -> respawn 15 seconds later
 -- Enemies that get dragged too far from home walk back and heal.
 
 local CollectionService = game:GetService("CollectionService")
@@ -16,11 +16,13 @@ local DataService = require(script.Parent.DataService)
 local Damageable = require(script.Parent.Damageable)
 local EnemyRig = require(script.Parent.EnemyRig)
 local LevelingService = require(script.Parent.LevelingService)
+local Props = require(script.Parent.Props)
+local QuestService = require(script.Parent.QuestService)
 
 local ENEMY_TAG = "Enemy"
 local THINK_INTERVAL = 0.1
 local REWARD_SHARE = 0.1 -- players who dealt at least 10% of max HP get the reward
-local BITE_RECOVERY = 0.3 -- stands still this long after biting
+local ATTACK_RECOVERY = 0.3 -- stands still this long after attacking
 
 type Area = typeof(Enemies.SpawnAreas[1])
 type Enemy = {
@@ -91,7 +93,8 @@ local function knockback(enemy: Enemy, attacker: Player?, heavy: boolean)
 	end
 	local direction = flat(enemy.Root.Position - attackerRoot.Position)
 	direction = if direction.Magnitude > 0.01 then direction.Unit else attackerRoot.CFrame.LookVector
-	enemy.Root.AssemblyLinearVelocity = direction * (if heavy then 34 else 12) + Vector3.new(0, if heavy then 32 else 6, 0)
+	local scale = enemy.Config.Knockback or 1
+	enemy.Root.AssemblyLinearVelocity = (direction * (if heavy then 34 else 12) + Vector3.new(0, if heavy then 32 else 6, 0)) * scale
 end
 
 local function giveRewards(enemy: Enemy, contributors: { [Player]: number })
@@ -104,18 +107,29 @@ local function giveRewards(enemy: Enemy, contributors: { [Player]: number })
 			LevelingService.AddXP(player, xp)
 			LevelingService.AddGold(player, gold)
 			Remotes.Reward:FireClient(player, position, xp, gold)
+			QuestService.OnEnemyKilled(player, enemy.Model:GetAttribute("EnemyType"))
 		end
 	end
 end
 
--- Flips over, then fades away.
+-- Rats flip onto their backs, bandits fall backwards; then they fade away.
 local function playDeath(model: Model, root: BasePart)
 	root.Anchored = true
 	local start = model:GetPivot()
+	local biped = model:GetAttribute("Rig") == "Biped"
+	local hipHeight = (model:FindFirstChildOfClass("Humanoid") :: Humanoid).HipHeight
 	local roll = Instance.new("NumberValue")
 	roll.Changed:Connect(function(value)
-		if model.Parent then
-			model:PivotTo(start * CFrame.new(0, value / 180 * 0.4, 0) * CFrame.Angles(0, 0, math.rad(value)))
+		if not model.Parent then
+			return
+		end
+		local t = value / 180
+		if biped then
+			-- Tip back around the feet until lying flat.
+			local feet = start * CFrame.new(0, -(hipHeight + root.Size.Y / 2), 0)
+			model:PivotTo(feet * CFrame.Angles(math.rad(90 * t), 0, 0) * feet:ToObjectSpace(start) * CFrame.new(0, -0.3 * t, 0))
+		else
+			model:PivotTo(start * CFrame.new(0, t * 0.4, 0) * CFrame.Angles(0, 0, math.rad(value)))
 		end
 	end)
 	TweenService:Create(roll, TweenInfo.new(0.35, Enum.EasingStyle.Quad), { Value = 180 }):Play()
@@ -192,7 +206,7 @@ function spawnEnemy(area: Area)
 	end)
 end
 
-local function bite(enemy: Enemy, target: Player, token: number)
+local function strike(enemy: Enemy, target: Player, token: number)
 	if token ~= enemy.AttackToken or not enemies[enemy.Model] then
 		return
 	end
@@ -220,7 +234,7 @@ local function startAttack(enemy: Enemy, target: Player, targetRoot: BasePart)
 	local now = os.clock()
 	local config = enemy.Config
 	enemy.NextAttack = now + config.AttackCooldown
-	enemy.BusyUntil = now + config.AttackWindup + BITE_RECOVERY
+	enemy.BusyUntil = now + config.AttackWindup + ATTACK_RECOVERY
 	enemy.Humanoid:MoveTo(enemy.Root.Position)
 
 	local position = enemy.Root.Position
@@ -228,8 +242,8 @@ local function startAttack(enemy: Enemy, target: Player, targetRoot: BasePart)
 
 	enemy.AttackToken += 1
 	local token = enemy.AttackToken
-	enemy.Model:SetAttribute("AttackStart", workspace:GetServerTimeNow()) -- clients play the rear-back-and-bite
-	task.delay(config.AttackWindup, bite, enemy, target, token)
+	enemy.Model:SetAttribute("AttackStart", workspace:GetServerTimeNow()) -- clients play the wind-up and attack
+	task.delay(config.AttackWindup, strike, enemy, target, token)
 end
 
 local function findTarget(enemy: Enemy): Player?
@@ -309,86 +323,37 @@ local function think(enemy: Enemy)
 	end
 end
 
--- A patch of dirt, a sign and some clutter so each area is easy to find.
+-- A patch of dirt, a sign and props around the edge so each area is easy to find.
 local function decorateArea(area: Area)
 	local folder = Instance.new("Folder")
 	folder.Name = area.Name
 	folder.Parent = workspace
 
 	local y = groundY(area.Center)
-	local function part(props: { [string]: any })
-		local p = Instance.new("Part")
-		p.Anchored = true
-		p.TopSurface = Enum.SurfaceType.Smooth
-		p.BottomSurface = Enum.SurfaceType.Smooth
-		for key, value in props do
-			(p :: any)[key] = value
-		end
-		p.Parent = folder
-		return p
-	end
-
-	part({
-		Name = "Ground",
-		Shape = Enum.PartType.Cylinder,
-		Size = Vector3.new(0.3, (area.Radius + 6) * 2, (area.Radius + 6) * 2),
-		CFrame = CFrame.new(area.Center.X, y + 0.05, area.Center.Z) * CFrame.Angles(0, 0, math.rad(90)),
-		Color = Color3.fromRGB(104, 92, 64),
-		Material = Enum.Material.Ground,
-		CanCollide = false,
-	})
+	Props.Place("DirtPad", Vector3.new(area.Center.X, y - 0.1, area.Center.Z), nil, folder, (area.Radius + 6) / 20)
+	y += 0.2
 
 	local clutter = Random.new(42)
-	for i = 1, 7 do
-		local angle = i / 7 * math.pi * 2 + clutter:NextNumber(-0.2, 0.2)
-		local spot = area.Center + Vector3.new(math.cos(angle), 0, math.sin(angle)) * (area.Radius + clutter:NextNumber(2, 5))
-		if i % 2 == 0 then
-			part({
-				Name = "Barrel",
-				Shape = Enum.PartType.Cylinder,
-				Size = Vector3.new(2.6, 2, 2),
-				CFrame = CFrame.new(spot.X, y + 1.3, spot.Z) * CFrame.Angles(0, 0, math.rad(90)),
-				Color = Color3.fromRGB(110, 72, 40),
-				Material = Enum.Material.Wood,
-			})
-		else
-			part({
-				Name = "HayBale",
-				Size = Vector3.new(3, 2, 2),
-				CFrame = CFrame.new(spot.X, y + 1, spot.Z) * CFrame.Angles(0, angle, 0),
-				Color = Color3.fromRGB(214, 184, 96),
-				Material = Enum.Material.Grass,
-			})
-		end
+	local list = area.Props or {}
+	for i, name in list do
+		local angle = i / #list * math.pi * 2 + clutter:NextNumber(-0.2, 0.2)
+		local outward = Vector3.new(math.cos(angle), 0, math.sin(angle))
+		local spot = area.Center + outward * (area.Radius + clutter:NextNumber(3, 6))
+		-- Tents open toward the middle; everything else gets a random turn.
+		local facing = if name == "Tent"
+			then -outward
+			else Vector3.new(math.cos(clutter:NextNumber(0, 6.28)), 0, math.sin(clutter:NextNumber(0, 6.28)))
+		Props.Place(name, Vector3.new(spot.X, y, spot.Z), facing, folder)
+	end
+	if area.CenterProp then
+		Props.Place(area.CenterProp, Vector3.new(area.Center.X, y, area.Center.Z), nil, folder)
 	end
 
 	-- Sign on the side facing spawn.
 	local toSpawn = flat(-area.Center)
 	toSpawn = if toSpawn.Magnitude > 0.01 then toSpawn.Unit else Vector3.zAxis
-	local signSpot = area.Center + toSpawn * (area.Radius + 8)
-	part({ Name = "SignPost", Size = Vector3.new(0.5, 5, 0.5), Position = Vector3.new(signSpot.X, y + 2.5, signSpot.Z), Color = Color3.fromRGB(92, 58, 32), Material = Enum.Material.Wood })
-	local board = part({
-		Name = "SignBoard",
-		Size = Vector3.new(7, 2.5, 0.4),
-		CFrame = CFrame.lookAt(Vector3.new(signSpot.X, y + 5, signSpot.Z), Vector3.new(signSpot.X, y + 5, signSpot.Z) + toSpawn),
-		Color = Color3.fromRGB(120, 80, 45),
-		Material = Enum.Material.Wood,
-	})
-	for _, face in { Enum.NormalId.Front, Enum.NormalId.Back } do
-		local gui = Instance.new("SurfaceGui")
-		gui.Face = face
-		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-		gui.PixelsPerStud = 50
-		gui.Parent = board
-		local label = Instance.new("TextLabel")
-		label.Size = UDim2.fromScale(1, 1)
-		label.BackgroundTransparency = 1
-		label.Font = Enum.Font.Fantasy
-		label.Text = ("%s  (Lv. %d)"):format(area.Name, Enemies.Types[area.Enemy].Level)
-		label.TextScaled = true
-		label.TextColor3 = Color3.fromRGB(255, 236, 190)
-		label.Parent = gui
-	end
+	local signSpot = area.Center + toSpawn * (area.Radius + 9)
+	Props.Sign(("%s  (Lv. %d)"):format(area.Name, Enemies.Types[area.Enemy].Level), Vector3.new(signSpot.X, y, signSpot.Z), toSpawn, folder)
 end
 
 function EnemyService.Start()

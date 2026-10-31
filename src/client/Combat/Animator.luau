@@ -5,6 +5,9 @@
 
 local RunService = game:GetService("RunService")
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Images = require(ReplicatedStorage.Shared.Images)
 local PunchAnimations = require(script.Parent.PunchAnimations)
 
 type Animation = PunchAnimations.Animation
@@ -151,6 +154,8 @@ local function getTrail(state: State, handName: string): Trail?
 		NumberSequenceKeypoint.new(0, 1),
 		NumberSequenceKeypoint.new(1, 0.2),
 	})
+	trail.TextureMode = Enum.TextureMode.Stretch
+	trail.Texture = Images.Get("FxTrail")
 	trail.Enabled = false
 	trail.Parent = hand
 	state.Trails[handName] = trail
@@ -278,12 +283,16 @@ function Animator.Play(character: Model, name: string)
 	for joint, values in state.Current do
 		startPose[joint] = values
 	end
+	local trail = animation.Trail and getTrail(state, animation.Trail.Hand)
+	if trail and trail.Texture == "" then
+		trail.Texture = Images.Get("FxTrail") -- may not have been ready earlier
+	end
 	state.Playing = {
 		Animation = animation,
 		Elapsed = 0,
 		PausedFor = 0,
 		StartPose = startPose,
-		Trail = animation.Trail and getTrail(state, animation.Trail.Hand),
+		Trail = trail,
 	}
 end
 

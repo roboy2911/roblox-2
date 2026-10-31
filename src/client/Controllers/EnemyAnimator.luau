@@ -1,6 +1,8 @@
--- Animates enemies on each player's screen: legs walk in step with how
--- fast the enemy moves, the tail sways, the head sniffs, and before a bite
--- the head rears back (the warning to dodge) and then snaps forward.
+-- Animates enemies on each player's screen. Legs walk in step with how
+-- fast the enemy moves. Before attacking there's a clear wind-up (the
+-- warning to dodge):
+--   Rats: tail sways, head sniffs; the head rears back, then snaps forward.
+--   Bandits: arms swing; the sword goes up overhead, then slashes down.
 -- Works with the joints EnemyRig adds (a Motor6D named "Joint" in each part).
 
 local CollectionService = game:GetService("CollectionService")
@@ -15,6 +17,7 @@ type Rig = {
 	Model: Model,
 	Root: BasePart,
 	Joints: { [string]: Motor6D },
+	Biped: boolean,
 	Phase: number,
 	Seed: number,
 }
@@ -36,7 +39,14 @@ local function add(model: Instance)
 			joints[part.Name] = joint
 		end
 	end
-	rigs[model] = { Model = model, Root = root :: BasePart, Joints = joints, Phase = 0, Seed = math.random() * 100 }
+	rigs[model] = {
+		Model = model,
+		Root = root :: BasePart,
+		Joints = joints,
+		Biped = model:GetAttribute("Rig") == "Biped" or joints.LegL ~= nil,
+		Phase = 0,
+		Seed = math.random() * 100,
+	}
 end
 
 local function set(rig: Rig, name: string, cframe: CFrame)
@@ -78,6 +88,42 @@ local function biteOffsets(model: Model, serverNow: number): (CFrame, CFrame)
 	return head, body
 end
 
+-- Bandit sword attack: raise overhead, slash down, recover.
+-- Returns sword-arm angle, torso twist and torso lean (degrees).
+local function slashPose(model: Model, serverNow: number): (number, number, number)
+	local start = model:GetAttribute("AttackStart") or 0
+	local windup = model:GetAttribute("AttackWindup") or 0.5
+	local t = serverNow - start
+	if start <= 0 or t < 0 or t > windup + 0.55 then
+		return 0, 0, 0
+	end
+	if t < windup then
+		local a = smooth(t / windup)
+		return 150 * a, -22 * a, 8 * a
+	elseif t < windup + 0.12 then
+		local b = (t - windup) / 0.12
+		return 150 - 130 * b, -22 + 44 * b, 8 - 18 * b
+	end
+	local c = 1 - smooth((t - windup - 0.12) / 0.43)
+	return 20 * c, 22 * c, -10 * c
+end
+
+local function animateBiped(rig: Rig, model: Model, amount: number, t: number, serverNow: number)
+	local swing = math.sin(rig.Phase) * math.rad(35) * amount
+	set(rig, "LegL", CFrame.Angles(swing, 0, 0))
+	set(rig, "LegR", CFrame.Angles(-swing, 0, 0))
+	set(rig, "ArmL", CFrame.Angles(-swing * 0.8, 0, math.rad(-4)))
+
+	local arm, twist, lean = slashPose(model, serverNow)
+	set(rig, "ArmR", CFrame.Angles(math.rad(arm) + swing * 0.3, 0, math.rad(4)))
+
+	local bob = math.abs(math.sin(rig.Phase)) * 0.1 * amount + math.sin(t * 2) * 0.02
+	set(rig, "Torso", CFrame.new(0, bob, 0) * CFrame.Angles(math.rad(lean), math.rad(twist), 0))
+
+	local look = (1 - amount) * math.sin(t * 0.7) * math.rad(20)
+	set(rig, "Head", CFrame.Angles(0, look - math.rad(twist) * 0.5, 0))
+end
+
 local function step(_time: number, dt: number)
 	local camera = workspace.CurrentCamera
 	local serverNow = workspace:GetServerTimeNow()
@@ -96,8 +142,14 @@ local function step(_time: number, dt: number)
 
 		local speed = (rig.Root.AssemblyLinearVelocity * Vector3.new(1, 0, 1)).Magnitude
 		local amount = math.clamp(speed / 12, 0, 1)
-		rig.Phase += dt * (4 + speed * 1.1)
 		local t = clock + rig.Seed
+
+		if rig.Biped then
+			rig.Phase += dt * speed * 0.75
+			animateBiped(rig, model, amount, t, serverNow)
+			continue
+		end
+		rig.Phase += dt * (4 + speed * 1.1)
 
 		-- Legs: diagonal pairs move together, like a real trot.
 		local swing = math.sin(rig.Phase) * math.rad(45) * amount

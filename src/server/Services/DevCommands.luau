@@ -2,16 +2,19 @@
 --   /xp 500       give yourself XP
 --   /gold 1000    give yourself gold
 --   /resetdata    start over at level 1
+--   /level 10     jump to a level
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TextChatService = game:GetService("TextChatService")
 
+local Leveling = require(ReplicatedStorage.Shared.Config.Leveling)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local DataService = require(script.Parent.DataService)
 local LevelingService = require(script.Parent.LevelingService)
 local CharacterService = require(script.Parent.CharacterService)
+local QuestService = require(script.Parent.QuestService)
 
 local DevCommands = {}
 
@@ -22,9 +25,22 @@ local commands = {
 	gold = function(player: Player, amount: number?)
 		LevelingService.AddGold(player, amount or 100)
 	end,
+	level = function(player: Player, level: number?)
+		local profile = DataService.Get(player)
+		if profile and level then
+			-- Add exactly the XP needed to reach that level.
+			local data = profile.Data
+			local needed = -data.XP
+			for l = data.Level, math.min(level, 300) - 1 do
+				needed += Leveling.XPToNext(l)
+			end
+			LevelingService.AddXP(player, needed)
+		end
+	end,
 	resetdata = function(player: Player)
 		DataService.Reset(player)
 		LevelingService.Sync(player)
+		QuestService.Sync(player)
 		CharacterService.Refresh(player, true)
 		Remotes.Notify:FireClient(player, "Data reset to level 1")
 	end,

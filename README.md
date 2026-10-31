@@ -10,7 +10,7 @@ Build order steps from the design doc:
 - [x] **1. Saving and leveling:** XP, levels (cap 300), 3 stat points per level, a level bar. Data saves with DataStores.
 - [x] **2. Basic combat:** Brawler 3-hit click combo, HP bars, three training dummies.
 - [x] **3. Enemies:** Rats that wander, chase, bite, die, drop XP and gold, and respawn.
-- [ ] 4. Quests
+- [x] **4. Quests:** Elder Bram in Millbrook gives a Rats quest and a Bandit Thugs quest (Lv. 10+).
 
 ## Setup
 
@@ -61,6 +61,17 @@ Build order steps from the design doc:
 - A rat gives 30 XP and 8 to 14 gold, then respawns 15 seconds later.
 - Lead a rat far from its field and it gives up, walks home and heals.
 
+**Step 4, quests**
+
+- Elder Bram stands near spawn by a market stall, with a "!" over his head.
+  Walk up and press **E** to talk.
+- **Rat Problem** (Lv. 1+): defeat 6 Rats for 270 XP and 60 gold.
+- **Bandit Trouble** (Lv. 10+): defeat 6 Bandit Thugs at the Bandit Camp (right of
+  spawn) for 990 XP and 200 gold. Bandit Thugs raise their sword before slashing.
+- The tracker in the top right shows progress. Quests finish on their own when
+  you reach the count, and your active quest is saved.
+- Studio shortcut: `/level 10` jumps to a level.
+
 ## Project layout
 
 ```
@@ -80,22 +91,34 @@ blender/             Blender scripts that build the 3D models
 tools/               upload_model.py: uploads a model to Roblox with Open Cloud
 ```
 
-## Models
+## Models and textures
 
-Models are built from Python scripts in `blender/` so they can be changed and
-rebuilt. To rebuild and upload one (needs `pip install bpy`, plus
-`ROBLOX_API_KEY` and `ROBLOX_USER_ID` set):
+Every model and effect image is made in Blender from Python scripts, with our
+own baked textures (no Roblox materials or built-in images):
+
+- `blender/common.py`: shared shapes, procedural materials (wood, straw, fur,
+  cloth, metal, dirt...) and the bake-and-export step
+- `blender/training_dummy.py`, `rat.py`, `characters.py` (quest giver, bandit),
+  `props.py` (barrel, hay bale, crate, tent, campfire, sign, dirt pad, stall),
+  `effects.py` (spark, dust, glow, ring, trail images)
+
+To rebuild and upload (needs `pip install bpy`, plus `ROBLOX_API_KEY` and
+`ROBLOX_USER_ID` set):
 
 ```bash
-python blender/training_dummy.py blender/out
+python blender/props.py blender/out
 ```
+
+(and the same for the other scripts), then:
 
 ```bash
-python tools/upload_model.py blender/out/TrainingDummy.fbx "Realm of Crowns - Training Dummy"
+python tools/build_assets.py blender/out
 ```
 
-Put the printed asset ID in `src/shared/Config/Assets.luau`.
+That uploads anything that changed and rewrites `src/shared/Config/Assets.luau`.
+Textures are uploaded as Decals; the server looks up their image IDs when it
+starts (`AssetService`).
 
-The game loads models with `InsertService`, which only works if the place is
-owned by the same account that owns the model. If it can't load, the game
-builds a simple dummy out of parts instead, so testing still works.
+The game can only load these assets if the place is owned by the same account
+that uploaded them. If they can't load, simple stand-in blocks are used so the
+game still works.

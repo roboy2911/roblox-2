@@ -1,42 +1,19 @@
--- Turns an uploaded enemy model into something that can walk around:
--- adds a HumanoidRootPart and a Humanoid, and joins each body part with a
--- Motor6D (named "Joint", inside the part) so clients can animate the legs,
--- tail and head. Built once per enemy type, then cloned for each spawn.
--- If the model can't be loaded, a simple one is built from parts.
+-- Turns an enemy model into something that can walk around: adds a
+-- HumanoidRootPart and a Humanoid, and joins each body part with a Motor6D
+-- (named "Joint", inside the part) so clients can animate it.
+--
+-- Two kinds of rig, set by Rig in Config/Enemies:
+--   Quadruped (rat):  Body, Head, Tail, LegFL, LegFR, LegBL, LegBR
+--   Biped (bandit):   Torso, Head, ArmL, ArmR, LegL, LegR
+--
+-- Built once per enemy type, then cloned for each spawn. If the model can't
+-- be loaded, a stand-in is built from blocks.
 
-local InsertService = game:GetService("InsertService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Assets = require(ReplicatedStorage.Shared.Config.Assets)
+local AssetService = require(script.Parent.AssetService)
 
 local EnemyRig = {}
 
-local FUR = { Color = Color3.fromRGB(77, 66, 60), Material = Enum.Material.Fabric }
-local PINK = { Color = Color3.fromRGB(219, 143, 143), Material = Enum.Material.SmoothPlastic }
-local EYE = { Color = Color3.fromRGB(10, 10, 10), Material = Enum.Material.Glass }
-
--- Part name pattern -> look. First match wins.
-local PART_STYLES = {
-	{ "^Eye", EYE },
-	{ "^Ear", PINK },
-	{ "^Nose", PINK },
-	{ "^Tail", PINK },
-	{ "", FUR },
-}
-
--- These parts are attached to the head so they move with it.
-local HEAD_PARTS = { "^Eye", "^Ear", "^Nose" }
-
 local templates: { [string]: Model } = {}
-
-local function matches(name: string, patterns: { string }): boolean
-	for _, pattern in patterns do
-		if string.find(name, pattern) then
-			return true
-		end
-	end
-	return false
-end
 
 -- How long a part is along a world direction.
 local function extentAlong(part: BasePart, direction: Vector3): number
@@ -50,89 +27,96 @@ local function flat(v: Vector3): Vector3
 	return v * Vector3.new(1, 0, 1)
 end
 
-local function loadParts(assetName: string, into: Model): boolean
-	local assetId = Assets[assetName]
-	if not assetId then
-		return false
-	end
-	local ok, container = pcall(function()
-		return InsertService:LoadAsset(assetId)
-	end)
-	if not ok then
-		warn(("[EnemyRig] Could not load %s model, using a simple one instead: %s"):format(assetName, tostring(container)))
-		return false
-	end
-	for _, part in container:GetDescendants() do
-		if part:IsA("BasePart") then
-			part.Parent = into
-		end
-	end
-	container:Destroy()
-	return into:FindFirstChild("Body") ~= nil and into:FindFirstChild("Head") ~= nil
-end
-
-local function blob(model: Model, name: string, size: Vector3, position: Vector3, shape: Enum.PartType?)
+local function block(model: Model, name: string, size: Vector3, position: Vector3, color: Color3, ball: boolean?)
 	local part = Instance.new("Part")
 	part.Name = name
 	part.Size = size
 	part.Position = position
-	part.TopSurface = Enum.SurfaceType.Smooth
-	part.BottomSurface = Enum.SurfaceType.Smooth
-	if shape then
-		part.Shape = shape
-	else
-		local mesh = Instance.new("SpecialMesh")
-		mesh.MeshType = Enum.MeshType.Sphere
-		mesh.Parent = part
+	part.Color = color
+	part.Material = Enum.Material.SmoothPlastic
+	if ball then
+		part.Shape = Enum.PartType.Ball
 	end
 	part.Parent = model
-	return part
 end
 
--- Simple rat made of parts (faces -Z), used if the mesh can't be loaded.
-local function buildFallbackRat(model: Model)
-	blob(model, "Body", Vector3.new(1.2, 1.05, 2.4), Vector3.new(0, 0.8, 0.2))
-	blob(model, "Head", Vector3.new(0.9, 0.85, 1.3), Vector3.new(0, 0.9, -1.15))
-	blob(model, "Nose", Vector3.new(0.22, 0.22, 0.22), Vector3.new(0, 0.82, -1.82), Enum.PartType.Ball)
-	blob(model, "Eyes", Vector3.new(0.22, 0.22, 0.22), Vector3.new(0.3, 1.06, -1.3), Enum.PartType.Ball)
-	blob(model, "Eyes2", Vector3.new(0.22, 0.22, 0.22), Vector3.new(-0.3, 1.06, -1.3), Enum.PartType.Ball)
-	blob(model, "Ears", Vector3.new(0.48, 0.48, 0.17), Vector3.new(0.3, 1.3, -0.85))
-	blob(model, "Ears2", Vector3.new(0.48, 0.48, 0.17), Vector3.new(-0.3, 1.3, -0.85))
-	local tail = blob(model, "Tail", Vector3.new(2, 0.16, 0.16), Vector3.zero, Enum.PartType.Cylinder)
-	tail.CFrame = CFrame.new(0, 0.55, 2.2) * CFrame.Angles(0, math.rad(90), math.rad(-10))
+-- Stand-ins (face -Z), only used if the real model can't be loaded.
+local function fallbackQuadruped(model: Model)
+	local fur, pink = Color3.fromRGB(77, 66, 60), Color3.fromRGB(219, 143, 143)
+	block(model, "Body", Vector3.new(1.2, 1, 2.4), Vector3.new(0, 0.8, 0.2), fur)
+	block(model, "Head", Vector3.new(0.9, 0.8, 1.3), Vector3.new(0, 0.9, -1.15), fur)
+	block(model, "Tail", Vector3.new(0.16, 0.16, 2), Vector3.new(0, 0.55, 2.2), pink)
 	for _, leg in { { "LegFL", -0.36, -0.5 }, { "LegFR", 0.36, -0.5 }, { "LegBL", -0.4, 0.55 }, { "LegBR", 0.4, 0.55 } } do
-		blob(model, leg[1], Vector3.new(0.26, 0.5, 0.3), Vector3.new(leg[2], 0.25, leg[3]), Enum.PartType.Block)
+		block(model, leg[1], Vector3.new(0.26, 0.5, 0.3), Vector3.new(leg[2], 0.25, leg[3]), fur)
 	end
+end
+
+local function fallbackBiped(model: Model)
+	local shirt, skin, pants = Color3.fromRGB(115, 95, 72), Color3.fromRGB(189, 133, 97), Color3.fromRGB(61, 56, 51)
+	block(model, "Torso", Vector3.new(1.6, 1.9, 0.9), Vector3.new(0, 3.3, 0), shirt)
+	block(model, "Head", Vector3.new(0.95, 0.95, 0.95), Vector3.new(0, 4.72, 0), skin, true)
+	block(model, "ArmL", Vector3.new(0.45, 1.9, 0.45), Vector3.new(-0.98, 3.2, 0), skin)
+	block(model, "ArmR", Vector3.new(0.45, 1.9, 0.45), Vector3.new(0.98, 3.2, 0), skin)
+	block(model, "LegL", Vector3.new(0.6, 2.3, 0.6), Vector3.new(-0.38, 1.15, 0), pants)
+	block(model, "LegR", Vector3.new(0.6, 2.3, 0.6), Vector3.new(0.38, 1.15, 0), pants)
+end
+
+-- Where each part turns: legs and arms at the top, the head at the neck,
+-- the tail at its base.
+local function jointPoint(part: BasePart, rig: string, forward: Vector3, bodyName: string): Vector3
+	local name = part.Name
+	local up = Vector3.yAxis
+	local pivot = part.Position
+	if rig == "Biped" and name == bodyName then
+		pivot -= up * extentAlong(part, up) * 0.45 -- twist at the waist
+	elseif string.find(name, "^Leg") then
+		pivot += up * extentAlong(part, up) * (if rig == "Biped" then 0.45 else 0.4)
+	elseif string.find(name, "^Arm") then
+		pivot += up * extentAlong(part, up) * 0.42
+	elseif string.find(name, "^Tail") then
+		pivot += forward * extentAlong(part, forward) * 0.5
+	elseif name == "Head" then
+		if rig == "Biped" then
+			pivot -= up * extentAlong(part, up) * 0.45
+		else
+			pivot -= forward * extentAlong(part, forward) * 0.35
+		end
+	end
+	return pivot
 end
 
 local function build(typeName: string, config): Model
-	local model = Instance.new("Model")
-	model.Name = config.DisplayName
-	if not loadParts(config.Model, model) then
-		model:ClearAllChildren()
-		buildFallbackRat(model)
-	end
+	local rig = config.Rig or "Quadruped"
+	local bodyName = config.BodyPart or "Body"
 
-	for _, part in model:GetChildren() do
-		if part:IsA("BasePart") then
-			for _, entry in PART_STYLES do
-				if string.find(part.Name, entry[1]) then
-					part.Color = entry[2].Color
-					part.Material = entry[2].Material
-					break
-				end
-			end
+	local model = AssetService.Model(config.Model)
+	if not model or not model:FindFirstChild(bodyName) or not model:FindFirstChild("Head") then
+		model = Instance.new("Model")
+		if rig == "Biped" then
+			fallbackBiped(model)
+		else
+			fallbackQuadruped(model)
 		end
 	end
+	model.Name = config.DisplayName
 
-	-- Scale so the longest side matches the configured length.
+	-- Scale: bipeds by height, four-legged enemies by length.
 	local _, size = model:GetBoundingBox()
-	model:ScaleTo(model:GetScale() * config.Length / math.max(size.X, size.Z))
+	if config.Height then
+		model:ScaleTo(model:GetScale() * config.Height / size.Y)
+	else
+		model:ScaleTo(model:GetScale() * config.Length / math.max(size.X, size.Z))
+	end
 
-	local body = model:FindFirstChild("Body") :: BasePart
+	local body = model:FindFirstChild(bodyName) :: BasePart
 	local head = model:FindFirstChild("Head") :: BasePart
-	local forward = flat(head.Position - body.Position)
-	forward = if forward.Magnitude > 0.01 then forward.Unit else -Vector3.zAxis
+	local forward = -Vector3.zAxis -- models face -Z
+	if rig == "Quadruped" then
+		local toHead = flat(head.Position - body.Position)
+		if toHead.Magnitude > 0.01 then
+			forward = toHead.Unit
+		end
+	end
 	local right = forward:Cross(Vector3.yAxis)
 
 	local bottom, top = math.huge, -math.huge
@@ -151,34 +135,23 @@ local function build(typeName: string, config): Model
 	if centerY - rootHeight / 2 - bottom < 0.05 then
 		rootHeight = math.max(0.3, 2 * (centerY - bottom - 0.05))
 	end
+	local rootPosition = Vector3.new(body.Position.X, centerY, body.Position.Z)
 	local root = Instance.new("Part")
 	root.Name = "HumanoidRootPart"
 	root.Size = Vector3.new(extentAlong(body, right) * 0.85, rootHeight, extentAlong(body, forward) * 0.85)
-	root.CFrame = CFrame.lookAt(Vector3.new(body.Position.X, centerY, body.Position.Z), Vector3.new(body.Position.X, centerY, body.Position.Z) + forward)
+	root.CFrame = CFrame.lookAt(rootPosition, rootPosition + forward)
 	root.Transparency = 1
 	root.CanCollide = true
-	root.TopSurface = Enum.SurfaceType.Smooth
-	root.BottomSurface = Enum.SurfaceType.Smooth
 	root.Parent = model
 
-	-- Joints. Each one turns around a sensible point: legs at the hip, the
-	-- tail at its base, the head at the neck.
 	for _, part in model:GetChildren() do
 		if not part:IsA("BasePart") or part == root then
 			continue
 		end
-		local name = part.Name
-		local pivot = part.Position
-		if string.find(name, "^Leg") then
-			pivot += Vector3.yAxis * extentAlong(part, Vector3.yAxis) * 0.4
-		elseif string.find(name, "^Tail") then
-			pivot += forward * extentAlong(part, forward) * 0.5
-		elseif name == "Head" then
-			pivot -= forward * extentAlong(part, forward) * 0.35
-		end
-		local jointFrame = CFrame.new(pivot) * root.CFrame.Rotation
-		local parent = if matches(name, HEAD_PARTS) then head else root
-
+		local jointFrame = CFrame.new(jointPoint(part, rig, forward, bodyName)) * root.CFrame.Rotation
+		-- A biped's arms and head hang off the torso, so they turn with it.
+		local onTorso = rig == "Biped" and (part.Name == "Head" or string.find(part.Name, "^Arm") ~= nil)
+		local parent = if onTorso then body else root
 		local joint = Instance.new("Motor6D")
 		joint.Name = "Joint"
 		joint.Part0 = parent
@@ -206,9 +179,10 @@ local function build(typeName: string, config): Model
 
 	model.PrimaryPart = root
 	model:SetAttribute("EnemyType", typeName)
+	model:SetAttribute("Rig", rig)
 	-- Heights measured from the root's center (the model's pivot).
 	model:SetAttribute("TemplateBarHeight", top - centerY + 1.2)
-	model:SetAttribute("TemplateHitHeight", (top - centerY) * 0.35)
+	model:SetAttribute("TemplateHitHeight", (top - centerY) * (if rig == "Biped" then 0.15 else 0.35))
 	return model
 end
 

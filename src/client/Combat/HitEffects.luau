@@ -6,30 +6,14 @@ local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Images = require(ReplicatedStorage.Shared.Images)
 
 local player = Players.LocalPlayer
 
-local SPARK_TEXTURE = "rbxasset://textures/particles/sparkles_main.dds"
-local SMOKE_TEXTURE = "rbxasset://textures/particles/smoke_main.dds"
 
 local HitEffects = {}
-
-local effectsFolder: Folder
-
-local function effectPart(props: { [string]: any }): Part
-	local part = Instance.new("Part")
-	part.Anchored = true
-	part.CanCollide = false
-	part.CanQuery = false
-	part.CanTouch = false
-	part.CastShadow = false
-	part.Material = Enum.Material.Neon
-	for key, value in props do
-		(part :: any)[key] = value
-	end
-	part.Parent = effectsFolder
-	return part
-end
 
 local function tween(instance: Instance, seconds: number, goal: { [string]: any }, style: Enum.EasingStyle?)
 	local t = TweenService:Create(instance, TweenInfo.new(seconds, style or Enum.EasingStyle.Quad, Enum.EasingDirection.Out), goal)
@@ -46,74 +30,90 @@ function HitEffects.HitPoint(target: Model, attackerPosition: Vector3): (Vector3
 	return base + Vector3.new(0, height, 0) - direction * 0.9, direction
 end
 
+-- One burst of particles from an attachment, using one of our images.
+local function burst(anchor: Attachment, props: { [string]: any }, count: number)
+	local emitter = Instance.new("ParticleEmitter")
+	emitter.Enabled = false
+	emitter.LockedToPart = false
+	for key, value in props do
+		(emitter :: any)[key] = value
+	end
+	emitter.Parent = anchor
+	emitter:Emit(count)
+end
+
+local function sequence(a: number, b: number): NumberSequence
+	return NumberSequence.new({ NumberSequenceKeypoint.new(0, a), NumberSequenceKeypoint.new(1, b) })
+end
+
 function HitEffects.Impact(position: Vector3, direction: Vector3, heavy: boolean)
 	local scale = if heavy then 1.8 else 1
-
-	-- Bright flash ball.
-	local flash = effectPart({
-		Shape = Enum.PartType.Ball,
-		Size = Vector3.one * 0.6,
-		Color = Color3.fromRGB(255, 250, 230),
-		Transparency = 0.1,
-		CFrame = CFrame.new(position),
-	})
-	tween(flash, 0.14, { Size = Vector3.one * 3.2 * scale, Transparency = 1 })
-
-	-- Shockwave ring facing along the punch.
-	local ring = effectPart({
-		Shape = Enum.PartType.Cylinder,
-		Size = Vector3.new(0.12, 1, 1),
-		Color = Color3.fromRGB(255, 226, 150),
-		Transparency = 0.25,
-		CFrame = CFrame.lookAt(position, position + direction) * CFrame.Angles(0, math.rad(90), 0),
-	})
-	tween(ring, 0.28, { Size = Vector3.new(0.04, 6 * scale, 6 * scale), Transparency = 1 })
-
-	-- A second, faster ring on heavy hits.
-	if heavy then
-		local ring2 = ring:Clone()
-		ring2.Parent = effectsFolder
-		ring2.CFrame = ring.CFrame * CFrame.new(-0.6, 0, 0)
-		tween(ring2, 0.18, { Size = Vector3.new(0.04, 9, 9), Transparency = 1 })
-		Debris:AddItem(ring2, 0.3)
-	end
-
-	-- Sparks and dust.
 	local anchor = Instance.new("Attachment")
 	anchor.WorldCFrame = CFrame.lookAt(position, position - direction)
 	anchor.Parent = workspace.Terrain
 
-	local sparks = Instance.new("ParticleEmitter")
-	sparks.Texture = SPARK_TEXTURE
-	sparks.Enabled = false
-	sparks.LightEmission = 1
-	sparks.Color = ColorSequence.new(Color3.fromRGB(255, 240, 200), Color3.fromRGB(255, 160, 60))
-	sparks.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5 * scale), NumberSequenceKeypoint.new(1, 0) })
-	sparks.Lifetime = NumberRange.new(0.15, 0.3)
-	sparks.Speed = NumberRange.new(18 * scale, 34 * scale)
-	sparks.SpreadAngle = Vector2.new(70, 70)
-	sparks.Drag = 6
-	sparks.Acceleration = Vector3.new(0, -30, 0)
-	sparks.Parent = anchor
-	sparks:Emit(if heavy then 28 else 14)
+	-- Bright flash.
+	burst(anchor, {
+		Texture = Images.Get("FxGlow"),
+		Color = ColorSequence.new(Color3.fromRGB(255, 250, 230)),
+		LightEmission = 1,
+		Size = sequence(0.8 * scale, 4 * scale),
+		Transparency = sequence(0, 1),
+		Lifetime = NumberRange.new(0.14),
+		Speed = NumberRange.new(0),
+	}, 1)
 
-	local dust = Instance.new("ParticleEmitter")
-	dust.Texture = SMOKE_TEXTURE
-	dust.Enabled = false
-	dust.Color = ColorSequence.new(Color3.fromRGB(214, 190, 150))
-	dust.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.8 * scale), NumberSequenceKeypoint.new(1, 3 * scale) })
-	dust.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.45), NumberSequenceKeypoint.new(1, 1) })
-	dust.Lifetime = NumberRange.new(0.35, 0.6)
-	dust.Speed = NumberRange.new(3, 8 * scale)
-	dust.SpreadAngle = Vector2.new(180, 180)
-	dust.Drag = 4
-	dust.RotSpeed = NumberRange.new(-90, 90)
-	dust.Rotation = NumberRange.new(0, 360)
-	dust.Parent = anchor
-	dust:Emit(if heavy then 12 else 6)
+	-- Shockwave ring.
+	burst(anchor, {
+		Texture = Images.Get("FxRing"),
+		Color = ColorSequence.new(Color3.fromRGB(255, 226, 150)),
+		LightEmission = 0.8,
+		Size = sequence(0.6, 6 * scale),
+		Transparency = sequence(0.1, 1),
+		Lifetime = NumberRange.new(0.28),
+		Speed = NumberRange.new(0),
+		Rotation = NumberRange.new(0, 360),
+	}, 1)
+	if heavy then
+		burst(anchor, {
+			Texture = Images.Get("FxRing"),
+			Color = ColorSequence.new(Color3.fromRGB(255, 240, 200)),
+			LightEmission = 1,
+			Size = sequence(1, 10),
+			Transparency = sequence(0.2, 1),
+			Lifetime = NumberRange.new(0.18),
+			Speed = NumberRange.new(0),
+		}, 1)
+	end
 
-	Debris:AddItem(flash, 0.2)
-	Debris:AddItem(ring, 0.35)
+	-- Sparks flying out of the hit.
+	burst(anchor, {
+		Texture = Images.Get("FxSpark"),
+		LightEmission = 1,
+		Color = ColorSequence.new(Color3.fromRGB(255, 240, 200), Color3.fromRGB(255, 160, 60)),
+		Size = sequence(0.6 * scale, 0),
+		Lifetime = NumberRange.new(0.15, 0.3),
+		Speed = NumberRange.new(18 * scale, 34 * scale),
+		SpreadAngle = Vector2.new(70, 70),
+		Drag = 6,
+		Acceleration = Vector3.new(0, -30, 0),
+		Orientation = Enum.ParticleOrientation.VelocityParallel,
+	}, if heavy then 28 else 14)
+
+	-- Dust puff.
+	burst(anchor, {
+		Texture = Images.Get("FxDust"),
+		Color = ColorSequence.new(Color3.fromRGB(214, 190, 150)),
+		Size = sequence(0.8 * scale, 3 * scale),
+		Transparency = sequence(0.35, 1),
+		Lifetime = NumberRange.new(0.35, 0.6),
+		Speed = NumberRange.new(3, 8 * scale),
+		SpreadAngle = Vector2.new(180, 180),
+		Drag = 4,
+		RotSpeed = NumberRange.new(-90, 90),
+		Rotation = NumberRange.new(0, 360),
+	}, if heavy then 12 else 6)
+
 	Debris:AddItem(anchor, 1)
 end
 
@@ -274,10 +274,6 @@ local function updateWobbles(dt: number)
 end
 
 function HitEffects.Start()
-	effectsFolder = Instance.new("Folder")
-	effectsFolder.Name = "LocalEffects"
-	effectsFolder.Parent = workspace
-
 	RunService:BindToRenderStep("CombatCameraShake", Enum.RenderPriority.Camera.Value + 1, updateShake)
 	RunService.RenderStepped:Connect(updateWobbles)
 end

@@ -30,6 +30,7 @@ Leveling.DefaultData = {
 		Defense = 0,
 		Vitality = 0,
 	},
+	Quest = { Id = "", Progress = 0 }, -- active quest ("" = none)
 }
 
 function Leveling.MaxHealth(vitality: number): number

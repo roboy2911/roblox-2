@@ -37,6 +37,8 @@ return {
 	HitEffect = remote("HitEffect"), -- server -> all: a hit landed (effects, damage numbers)
 	PlayerHit = remote("PlayerHit"), -- server -> player: an enemy hit you
 	Reward = remote("Reward"), -- server -> player: XP and gold earned (floating text)
+	QuestDialog = remote("QuestDialog"), -- server -> player: open a quest giver's dialog
+	QuestAction = remote("QuestAction"), -- client -> server: accept or abandon a quest
 	LevelUp = remote("LevelUp"), -- server -> player: new level reached
 	Notify = remote("Notify"), -- server -> player: short message on screen
 }

@@ -1,0 +1,118 @@
+{
+  "BanditThug.fbx": {
+    "id": "91339796650586",
+    "sha": "b9fa239cfdce1bd5646f6d6ee565d798631e8da940b255a345b53217fff2dadf"
+  },
+  "BanditThug.png": {
+    "id": "113424751804607",
+    "sha": "b57a00ad07b8e479f274faa0edcc8a07dc5184ecef6f07facfbaedf614eb4f82"
+  },
+  "Barrel.fbx": {
+    "id": "86600069808029",
+    "sha": "fbc6adc8e406734aaa7eea389d5b3b1499f2d9844bf3e90c9695275c582022d3"
+  },
+  "Barrel.png": {
+    "id": "110399264589935",
+    "sha": "3d09655f5bcb66c0d6fc37694f534f7950386019bf5d9bc477376a63f775ab7d"
+  },
+  "Campfire.fbx": {
+    "id": "109980224444073",
+    "sha": "ecb2a2c908174b5ceef14946c00740368354cee58b46dde28c0d0f23c4c6bbfc"
+  },
+  "Campfire.png": {
+    "id": "140630687748370",
+    "sha": "eb855178429d28f46bba39973a91d1731c6ca01ad181d331931a5babae7d3e5c"
+  },
+  "Crate.fbx": {
+    "id": "84117853541175",
+    "sha": "2ed4fedc95bb9496ee2b89919db974a99bc8251c4ea11ef4a1463989f9954cdf"
+  },
+  "Crate.png": {
+    "id": "100524305594822",
+    "sha": "7cb19816a6b8d8e40ee1b797e13ef75397f63ef5c89bffde70c20e3e0813de97"
+  },
+  "DirtPad.fbx": {
+    "id": "134149238117934",
+    "sha": "6a6f8b04ab76b74d6552099224286ac405e9d50985306468b2a3d5b232fcea75"
+  },
+  "DirtPad.png": {
+    "id": "134778601747670",
+    "sha": "bed10cbfd4e489e958a6f1c434be66c9fb4b1be83711556165e3e4f54e2f4e11"
+  },
+  "FxDust.png": {
+    "id": "106097453113975",
+    "sha": "3ec00fd210a85339cdbd705e17bb9dfffffd37b781193bbb47667e9b304aa8f3"
+  },
+  "FxGlow.png": {
+    "id": "75232294723661",
+    "sha": "0bbe95e4900554cd6132e71e5a17fd9ad621de59d1013199b51aa187cfb008be"
+  },
+  "FxRing.png": {
+    "id": "102719264630637",
+    "sha": "82c978b9377dcca2df8c2aa07477aa3eeb22b817bbacb66dad4940337aed2178"
+  },
+  "FxSpark.png": {
+    "id": "107224043611000",
+    "sha": "4c8f3d8ff0950af9e1d1e655c383413a3baa327e72e3ce494a1c9e5502ef75b8"
+  },
+  "FxTrail.png": {
+    "id": "93266896755095",
+    "sha": "54c390191701fa44e47eeb771844b8067a40b07360ad14d72229181d44a41c35"
+  },
+  "HayBale.fbx": {
+    "id": "118647994524199",
+    "sha": "e341e334049f77204fdbf4512bd7affe2c256315b20c09cce6eda68d662c3f7c"
+  },
+  "HayBale.png": {
+    "id": "71498694295914",
+    "sha": "6b73a4068ade0e8c3d1159e8ef7c144a7d5b5a291af9a7ef9e0eb7a30849619e"
+  },
+  "QuestGiver.fbx": {
+    "id": "73334953594635",
+    "sha": "8cf1306b1b7cd7e1fdc949362a26af0f5809b40932aa3fbb136ac07ae439bb1e"
+  },
+  "QuestGiver.png": {
+    "id": "76599143144171",
+    "sha": "f1c12143f9be067166143969d61f1d8ed7231155fa79d4ded9f4da9b5d939b4a"
+  },
+  "Rat.fbx": {
+    "id": "102242425561381",
+    "sha": "6afd9063835e1fe80ac76215ed6de5f0c2089fb429bbe2baee786d380aec26b0"
+  },
+  "Rat.png": {
+    "id": "81738639904321",
+    "sha": "9321a25ea587c7e3836677ebe32e9db827ec4df13ce17065b17ff3a50373426c"
+  },
+  "Sign.fbx": {
+    "id": "86347564907483",
+    "sha": "ca6ddddcb424ce1a8651d36960ee5a717b514a75686beefbfc378ac03e05b7b7"
+  },
+  "Sign.png": {
+    "id": "124541055607568",
+    "sha": "fd99d8740f0aa046989631c25b3ff893e84e29eb07754ce9f5308d3786c588bd"
+  },
+  "Stall.fbx": {
+    "id": "91813507267173",
+    "sha": "aa06ca8f38bb6cee31d008f79f59993d8fe577c289169d594f79e13e73845e2d"
+  },
+  "Stall.png": {
+    "id": "133260032043752",
+    "sha": "a1fd17453ebf665073f367e95a84724c4669a462812b0c07dbaed9da8530f691"
+  },
+  "Tent.fbx": {
+    "id": "111057510563363",
+    "sha": "88fc5022390412fadc997b562635dd0f48e4ccf9234b3c45c09f3924e842cbae"
+  },
+  "Tent.png": {
+    "id": "107785826052903",
+    "sha": "279fea8a8cde56f52568f2446978413663b93da25a9e71fd5d005327d39f604f"
+  },
+  "TrainingDummy.fbx": {
+    "id": "109000357652359",
+    "sha": "1b0ef9975afaa497d4f1e9afbcc5a2dfe6fb85a3e3cad4735c8ee5257fc48db9"
+  },
+  "TrainingDummy.png": {
+    "id": "90332035285806",
+    "sha": "fff116921835abf78383db32d38c4db5ae4801051c7fc862adeb42c71cba239a"
+  }
+}
