@@ -174,7 +174,8 @@ function spawnEnemy(area: Area)
 		BarHeight = model:GetAttribute("TemplateBarHeight"),
 		HitHeight = model:GetAttribute("TemplateHitHeight"),
 	})
-	model:SetAttribute("HitRadius", config.Length * 0.35)
+	-- Extra reach for player punches: long enemies (rats) need more than tall ones.
+	model:SetAttribute("HitRadius", if config.Length then config.Length * 0.35 else 1.5)
 	model:SetAttribute("AttackStart", 0)
 	model:SetAttribute("AttackWindup", config.AttackWindup)
 	CollectionService:AddTag(model, ENEMY_TAG)
@@ -362,9 +363,15 @@ function EnemyService.Start()
 	enemiesFolder.Parent = workspace
 
 	for _, area in Enemies.SpawnAreas do
-		decorateArea(area)
+		local decorated, decorError = pcall(decorateArea, area)
+		if not decorated then
+			warn(("[EnemyService] Couldn't decorate %s: %s"):format(area.Name, tostring(decorError)))
+		end
 		for _ = 1, area.Count do
-			spawnEnemy(area)
+			local ok, err = pcall(spawnEnemy, area)
+			if not ok then
+				warn(("[EnemyService] Couldn't spawn %s: %s"):format(area.Enemy, tostring(err)))
+			end
 		end
 	end
 
