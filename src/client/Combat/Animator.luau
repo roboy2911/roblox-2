@@ -8,6 +8,9 @@ local RunService = game:GetService("RunService")
 local PunchAnimations = require(script.Parent.PunchAnimations)
 
 type Animation = PunchAnimations.Animation
+-- A joint we can pose: a Motor6D (classic rigs) or an AnimationConstraint
+-- (Roblox's newer avatar joints). Both have a Transform property.
+type Joint = Instance
 type Values = { number } -- x, y, z (degrees), px, py, pz (studs)
 
 local JOINTS = {
@@ -45,10 +48,10 @@ type Playing = {
 
 type State = {
 	Character: Model,
-	Motors: { [string]: Motor6D },
+	Motors: { [string]: Joint },
 	Current: { [string]: Values }, -- last pose applied per joint
-	Base: { [Motor6D]: CFrame },
-	Written: { [Motor6D]: CFrame },
+	Base: { [Joint]: CFrame },
+	Written: { [Joint]: CFrame },
 	Playing: Playing?,
 	Trails: { [string]: Trail },
 }
@@ -56,6 +59,27 @@ type State = {
 local Animator = {}
 
 local states: { [Model]: State } = {}
+local warned: { [Model]: boolean } = setmetatable({}, { __mode = "k" }) :: any
+
+local function isJoint(instance: Instance?): boolean
+	return instance ~= nil and (instance:IsA("Motor6D") or instance:IsA("AnimationConstraint"))
+end
+
+-- Finds a joint by name. With the newer avatar joints there can be both a
+-- Motor6D and an AnimationConstraint with the same name; the constraint is
+-- the one that actually moves the limb, so prefer it.
+local function findJoint(character: Model, name: string): Joint?
+	local found = nil
+	for _, descendant in character:GetDescendants() do
+		if descendant.Name == name and isJoint(descendant) then
+			if descendant:IsA("AnimationConstraint") then
+				return descendant
+			end
+			found = found or descendant
+		end
+	end
+	return found
+end
 
 local function getState(character: Model): State?
 	local state = states[character]
@@ -64,13 +88,17 @@ local function getState(character: Model): State?
 	end
 	local motors = {}
 	for _, name in JOINTS do
-		local motor = character:FindFirstChild(name, true)
-		if motor and motor:IsA("Motor6D") then
-			motors[name] = motor
+		local joint = findJoint(character, name)
+		if joint then
+			motors[name] = joint
 		end
 	end
-	if not motors.Waist then
-		return nil -- not an R15 character
+	if not motors.Waist and not motors.RightShoulder then
+		if not warned[character] then
+			warned[character] = true
+			warn("[Animator] No R15 joints found on " .. character.Name .. ", punches won't animate. Is the game set to R15 (Game Settings > Avatar)?")
+		end
+		return nil
 	end
 	state = {
 		Character = character,
@@ -167,8 +195,8 @@ end
 
 -- Adds an offset to a joint without letting it build up frame after frame
 -- (if no Roblox animation reset the joint since our last write).
-local function apply(state: State, motor: Motor6D, offset: CFrame?)
-	local base = motor.Transform
+local function apply(state: State, motor: any, offset: CFrame?)
+	local base: CFrame = motor.Transform
 	local written = state.Written[motor]
 	if written and base == written then
 		base = state.Base[motor]
@@ -182,6 +210,15 @@ local function apply(state: State, motor: Motor6D, offset: CFrame?)
 		motor.Transform = base
 		state.Base[motor] = nil
 		state.Written[motor] = nil
+	end
+end
+
+-- Like apply, but a failure prints once instead of breaking the loop.
+local function safeApply(state: State, motor: any, offset: CFrame?)
+	local ok, err = pcall(apply, state, motor, offset)
+	if not ok and not warned[state.Character] then
+		warned[state.Character] = true
+		warn(("[Animator] Couldn't pose %s (%s): %s"):format(motor.Name, motor.ClassName, tostring(err)))
 	end
 end
 
@@ -212,12 +249,12 @@ local function step(_time: number, dt: number)
 
 		for name, motor in state.Motors do
 			if finished then
-				pcall(apply, state, motor, nil)
+				safeApply(state, motor, nil)
 				state.Current[name] = nil
 			else
 				local values = sample(playing, name)
 				state.Current[name] = values
-				pcall(apply, state, motor, toCFrame(values))
+				safeApply(state, motor, toCFrame(values))
 			end
 		end
 		if finished then
