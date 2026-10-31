@@ -45,8 +45,12 @@ Build order steps from the design doc:
 **Step 2, combat**
 
 - Walk to the dirt circle with the sign (in front of spawn).
-- Click to punch: right, left, then a heavier right. Wait a moment and the combo starts over.
-- The dummy shows damage numbers and an HP bar. Defeat it for 40 XP; it gets back up after 3 seconds.
+- Click to attack: right jab, left jab, then a crouching uppercut. You auto-turn
+  toward the nearest dummy and lunge into each punch.
+- Hits land when the fist connects: impact flash, shockwave ring, sparks and dust,
+  camera shake, a tiny freeze-frame, and the dummy wobbles back.
+- Defeat a dummy for 40 XP; it falls over and gets back up after 3 seconds.
+- Punch animations need R15 characters (Game Settings > Avatar).
 
 ## Project layout
 
@@ -61,6 +65,7 @@ src/server/          ServerScriptService.Server
 src/client/          StarterPlayerScripts.Client
   Main.client.luau   starts the controllers
   Controllers/       HUD, CombatController, HealthBars
+  Combat/            punch keyframes, the animator that plays them, hit effects
 blender/             Blender scripts that build the 3D models
 tools/               upload_model.py: uploads a model to Roblox with Open Cloud
 ```

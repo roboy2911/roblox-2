@@ -211,6 +211,7 @@ function TrainingGround.Start()
 			MaxHealth = DUMMY_HEALTH,
 			Level = 1,
 			BarHeight = DUMMY_HEIGHT + 1.5,
+			HitHeight = DUMMY_HEIGHT * 0.58,
 		})
 		Damageable.OnDied(dummy, function(_, contributors)
 			for player in contributors do

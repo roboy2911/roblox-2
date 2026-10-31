@@ -8,12 +8,15 @@ Combat.Styles = {
 	Brawler = {
 		DisplayName = "Brawler",
 		Stat = "Strength", -- stat that boosts this style's damage
+		-- HitDelay: seconds from click to the fist landing (matches the animation).
+		-- Lunge: how far forward the player steps into the punch.
 		Combo = {
-			{ Damage = 12, Arm = "Right" },
-			{ Damage = 12, Arm = "Left" },
-			{ Damage = 18, Arm = "Right", Heavy = true },
+			{ Damage = 12, Animation = "JabRight", HitDelay = 0.1, LungeSpeed = 22, LungeTime = 0.08 },
+			{ Damage = 12, Animation = "JabLeft", HitDelay = 0.1, LungeSpeed = 22, LungeTime = 0.08 },
+			{ Damage = 18, Animation = "UppercutRight", HitDelay = 0.2, LungeSpeed = 42, LungeTime = 0.14, Heavy = true },
 		},
 		Range = 6, -- studs in front of the player
+		AimAssistRange = 12, -- clicking turns you toward a target this close
 		HitArc = 0.3, -- dot product with look direction; 0.3 is about a 145 degree cone
 		SwingCooldown = 0.35,
 		ComboEndCooldown = 0.8,

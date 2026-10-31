@@ -1,6 +1,7 @@
 -- Anything players can hit (training dummies now, enemies and bosses later).
 -- Health lives in attributes on the model so clients can draw HP bars:
---   Health, MaxHealth, DisplayName, Level, Defense, Dead, StunnedUntil, BarHeight
+--   Health, MaxHealth, DisplayName, Level, Defense, Dead, StunnedUntil,
+--   BarHeight, HitHeight
 
 local CollectionService = game:GetService("CollectionService")
 
@@ -19,6 +20,7 @@ export type Options = {
 	Level: number?,
 	Defense: number?,
 	BarHeight: number?, -- studs above the model's pivot to draw the HP bar
+	HitHeight: number?, -- studs above the pivot where hit effects appear
 }
 
 function Damageable.Setup(model: Model, options: Options)
@@ -28,6 +30,7 @@ function Damageable.Setup(model: Model, options: Options)
 	model:SetAttribute("Level", options.Level or 1)
 	model:SetAttribute("Defense", options.Defense or 0)
 	model:SetAttribute("BarHeight", options.BarHeight or 6)
+	model:SetAttribute("HitHeight", options.HitHeight or (options.BarHeight or 6) * 0.5)
 	model:SetAttribute("Dead", false)
 	model:SetAttribute("StunnedUntil", 0)
 	contributors[model] = {}

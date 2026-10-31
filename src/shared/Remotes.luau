@@ -32,9 +32,9 @@ local function remote(name: string): RemoteEvent
 end
 
 return {
-	Attack = remote("Attack"), -- client -> server: player clicked
-	Swing = remote("Swing"), -- server -> all: someone swung (for other players' arm animation)
-	HitConfirm = remote("HitConfirm"), -- server -> attacker: what got hit and for how much
+	Attack = remote("Attack"), -- client -> server: player clicked (with aim direction)
+	Swing = remote("Swing"), -- server -> all: someone swung (to play their animation)
+	HitEffect = remote("HitEffect"), -- server -> all: a hit landed (effects, damage numbers)
 	LevelUp = remote("LevelUp"), -- server -> player: new level reached
 	Notify = remote("Notify"), -- server -> player: short message on screen
 }

@@ -1,5 +1,7 @@
 -- Handles clicks from players. The server owns the combo counter, the
 -- cooldowns and the hit check, so clients can't spam or hit from far away.
+-- Damage lands a moment after the click, when the fist connects in the
+-- animation, and every client is told so they can show the hit effects.
 
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
@@ -21,12 +23,22 @@ local CombatService = {}
 
 local states: { [Player]: ComboState } = {}
 
-local function findTargets(rootPart: BasePart, style): { Model }
-	local hits = {}
-	local origin = rootPart.Position
+-- The direction the client says it's punching, flattened. Falls back to the
+-- way the character faces. A cheater can only pick one direction, and the
+-- range check still applies, so trusting it is safe.
+local function aimDirection(rootPart: BasePart, aim: any): Vector3
+	if typeof(aim) == "Vector3" then
+		local flat = aim * Vector3.new(1, 0, 1)
+		if flat.Magnitude > 0.01 and flat.Magnitude == flat.Magnitude then -- also rejects NaN
+			return flat.Unit
+		end
+	end
 	local look = rootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
-	look = if look.Magnitude > 0 then look.Unit else Vector3.zAxis
+	return if look.Magnitude > 0.01 then look.Unit else Vector3.zAxis
+end
 
+local function findTargets(origin: Vector3, look: Vector3, style): { Model }
+	local hits = {}
 	for _, model in CollectionService:GetTagged(Damageable.Tag) do
 		if not model:IsA("Model") or not model:IsDescendantOf(workspace) or not Damageable.IsAlive(model) then
 			continue
@@ -44,12 +56,33 @@ local function findTargets(rootPart: BasePart, style): { Model }
 	return hits
 end
 
-local function onAttack(player: Player)
+-- Runs when the fist lands (a moment after the click), using where the
+-- player is at that moment.
+local function resolveHit(player: Player, style, move, aim: any)
 	local profile = DataService.Get(player)
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	local rootPart = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
 	if not profile or not humanoid or humanoid.Health <= 0 or not rootPart then
+		return
+	end
+
+	local statPoints = profile.Data.Stats[style.Stat] or 0
+	local look = aimDirection(rootPart, aim)
+	for _, target in findTargets(rootPart.Position, look, style) do
+		local damage = Combat.CalculateDamage(move.Damage, statPoints, target:GetAttribute("Defense") or 0)
+		local dealt, killed = Damageable.ApplyDamage(target, damage, player)
+		if dealt > 0 then
+			Damageable.Stun(target, style.Stun)
+			Remotes.HitEffect:FireAllClients(player, target, dealt, killed, move.Heavy == true)
+		end
+	end
+end
+
+local function onAttack(player: Player, aim: any)
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if not DataService.Get(player) or not humanoid or humanoid.Health <= 0 then
 		return
 	end
 
@@ -74,16 +107,7 @@ local function onAttack(player: Player)
 
 	local move = style.Combo[state.Index]
 	Remotes.Swing:FireAllClients(player, state.Index)
-
-	local statPoints = profile.Data.Stats[style.Stat] or 0
-	for _, target in findTargets(rootPart, style) do
-		local damage = Combat.CalculateDamage(move.Damage, statPoints, target:GetAttribute("Defense") or 0)
-		local dealt, killed = Damageable.ApplyDamage(target, damage, player)
-		if dealt > 0 then
-			Damageable.Stun(target, style.Stun)
-			Remotes.HitConfirm:FireClient(player, target, dealt, killed, move.Heavy == true)
-		end
-	end
+	task.delay(move.HitDelay or 0, resolveHit, player, style, move, aim)
 end
 
 function CombatService.Start()
