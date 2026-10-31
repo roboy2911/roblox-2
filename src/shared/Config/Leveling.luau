@@ -49,6 +49,7 @@ Leveling.DefaultData = {
 	Style = "Brawler", -- combat style
 	Weapon = "", -- equipped weapon ("" = none)
 	OwnedWeapons = {}, -- [weaponId] = true
+	Island = "Millbrook", -- where you respawn
 }
 
 function Leveling.MaxHealth(vitality: number): number

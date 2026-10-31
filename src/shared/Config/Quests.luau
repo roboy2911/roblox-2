@@ -10,6 +10,13 @@ Quests.Givers = {
 		Position = Vector3.new(18, 0, 4), -- on the ground near spawn
 		Quests = { "RatProblem", "BanditTrouble", "CaptainHunt" },
 	},
+	Whisperwood = {
+		DisplayName = "Ranger Elda",
+		Model = "Ranger",
+		Greeting = "Keep your voice down. The forest has ears, and most of them are pointy.",
+		Position = Vector3.new(48, 0, -445),
+		Quests = { "WolfHunt", "GoblinRaid", "GoblinKingQuest" },
+	},
 }
 
 Quests.List = {
@@ -39,6 +46,33 @@ Quests.List = {
 		MinLevel = 20,
 		XP = 3000,
 		Gold = 800,
+	},
+	WolfHunt = {
+		Title = "Thin the Pack",
+		Description = "Wolves have been stalking travelers near their den. Drive them off.",
+		Enemy = "Wolf",
+		Count = 8,
+		MinLevel = 30,
+		XP = 4800,
+		Gold = 900,
+	},
+	GoblinRaid = {
+		Title = "Goblin Raid",
+		Description = "Goblins keep stealing our arrows. Raid their camp in the east woods.",
+		Enemy = "Goblin",
+		Count = 8,
+		MinLevel = 55,
+		XP = 8400,
+		Gold = 1600,
+	},
+	GoblinKingQuest = {
+		Title = "Crown of Sticks",
+		Description = "The Goblin King sits on his throne in the south. End his reign.",
+		Enemy = "GoblinKing",
+		Count = 1,
+		MinLevel = 70,
+		XP = 12000,
+		Gold = 3000,
 	},
 }
 

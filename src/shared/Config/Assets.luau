@@ -25,6 +25,13 @@ return {
 		Blacksmith = { Model = 71944898557943, Texture = 93280765192640 },
 		Anvil = { Model = 118542058241286, Texture = 137783339700287 },
 		BanditCaptain = { Model = 124711161031328, Texture = 117948995731745 },
+		Wolf = { Model = 97310456287749, Texture = 92600101432006 },
+		Goblin = { Model = 103688716404076, Texture = 78235651371417 },
+		GoblinKing = { Model = 114465372477763, Texture = 106568922277081 },
+		Ranger = { Model = 137926016327689, Texture = 133903093470188 },
+		Rowboat = { Model = 72598920754264, Texture = 94975065110097 },
+		Dock = { Model = 132438419453781, Texture = 118096557643913 },
+		Rock = { Model = 107386534036826, Texture = 86051294795614 },
 	},
 	Images = {
 		FxSpark = 107224043611000,
@@ -33,5 +40,9 @@ return {
 		FxRing = 102719264630637,
 		FxTrail = 93266896755095,
 		FxFlame = 76149563240348,
+		TileGrass = 134510650689792,
+		TileForest = 76842376879271,
+		TileSand = 106593043771577,
+		TileWater = 83169234426393,
 	},
 }

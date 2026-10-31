@@ -48,22 +48,13 @@ local function gemModel(gemId: string): Model
 end
 
 -- Leaves a gem under a random tree. Returns false if one is already out.
-function GemSpawner.SpawnGem(gemId: string?): boolean
-	if current and current.Parent then
-		return false
-	end
-	local list = Gems.TreeSpawn.Gems
-	local id = gemId or list[math.random(1, #list)]
+-- Puts a gem on the ground at a spot. Hold E to eat it. Returns the model.
+function GemSpawner.SpawnPickup(id: string, spot: Vector3, lifetime: number): Model?
 	local gem = Gems.List[id]
-	if not gem or #treeSpots == 0 then
-		return false
+	if not gem then
+		return nil
 	end
-
-	local tree = treeSpots[math.random(1, #treeSpots)]
-	local angle = math.random() * math.pi * 2
-	local spot = tree + Vector3.new(math.cos(angle), 0, math.sin(angle)) * 3.2
-	local y = Props.GroundY(spot, { folder })
-
+	local y = Props.GroundY(spot, { folder, workspace:FindFirstChild("Enemies") :: Instance })
 	local model = gemModel(id)
 	model.Name = gem.DisplayName
 	model:PivotTo(CFrame.new(spot.X, y + 0.4, spot.Z))
@@ -91,7 +82,6 @@ function GemSpawner.SpawnGem(gemId: string?): boolean
 				return
 			end
 			model:Destroy()
-			current = nil
 			GemService.SetGem(player, id)
 			Remotes.Notify:FireClient(player, ("You ate the %s! Press Z to use it."):format(gem.DisplayName))
 		end)
@@ -99,17 +89,32 @@ function GemSpawner.SpawnGem(gemId: string?): boolean
 
 	model.Parent = folder
 	CollectionService:AddTag(model, PICKUP_TAG)
-	current = model
+	task.delay(lifetime, function()
+		if model.Parent then
+			model:Destroy()
+		end
+	end)
+	return model
+end
+
+-- Leaves a gem under a random tree. Returns false if one is already out.
+function GemSpawner.SpawnGem(gemId: string?): boolean
+	if current and current.Parent then
+		return false
+	end
+	local list = Gems.TreeSpawn.Gems
+	local id = gemId or list[math.random(1, #list)]
+	local gem = Gems.List[id]
+	if not gem or #treeSpots == 0 then
+		return false
+	end
+	local tree = treeSpots[math.random(1, #treeSpots)]
+	local angle = math.random() * math.pi * 2
+	local spot = tree + Vector3.new(math.cos(angle), 0, math.sin(angle)) * 3.2
+	current = GemSpawner.SpawnPickup(id, spot, Gems.TreeSpawn.Lifetime)
 	for _, player in Players:GetPlayers() do
 		Remotes.Notify:FireClient(player, ("A %s appeared under a tree near Millbrook!"):format(gem.DisplayName))
 	end
-
-	task.delay(Gems.TreeSpawn.Lifetime, function()
-		if current == model then
-			model:Destroy()
-			current = nil
-		end
-	end)
 	return true
 end
 

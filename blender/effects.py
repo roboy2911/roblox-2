@@ -83,6 +83,26 @@ def flame(u, v):
     return 1, 1, 1, inside ** 0.8 * flicker * (1 - y) ** 0.3
 
 
+def tile(colors, scale, pebbles=False, waves=False):
+    """Seamless-ish ground tile: noise sampled on a torus so edges wrap."""
+    a, b, d = colors
+
+    def pixel(u, v):
+        x, y = (u + 1) * math.pi, (v + 1) * math.pi
+        p = Vector((math.cos(x) * scale, math.sin(x) * scale, math.cos(y) * scale + math.sin(y) * scale * 0.7))
+        n = noise.noise(p) * 0.5 + 0.5
+        n2 = noise.noise(p * 3.1) * 0.5 + 0.5
+        t = n * 0.65 + n2 * 0.35
+        if waves:
+            t = 0.5 + 0.5 * math.sin((v + 1) * math.pi * 4 + n * 6)
+        col = [a[i] + (b[i] - a[i]) * t for i in range(3)]
+        if pebbles and n2 > 0.78:
+            col = [d[i] for i in range(3)]
+        return col[0], col[1], col[2], 1
+
+    return pixel
+
+
 if __name__ == "__main__":
     out = c.out_dir()
     c.bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -92,3 +112,7 @@ if __name__ == "__main__":
     save("FxRing", 256, 256, ring, out)
     save("FxTrail", 256, 64, trail, out)
     save("FxFlame", 128, 128, flame, out)
+    save("TileGrass", 128, 128, tile(((0.22, 0.4, 0.14), (0.36, 0.56, 0.2), (0.3, 0.3, 0.2)), 1.2), out)
+    save("TileForest", 128, 128, tile(((0.12, 0.26, 0.09), (0.25, 0.38, 0.13), (0.3, 0.22, 0.12)), 1.4, pebbles=True), out)
+    save("TileSand", 128, 128, tile(((0.78, 0.68, 0.46), (0.9, 0.82, 0.6), (0.6, 0.55, 0.45)), 1.6, pebbles=True), out)
+    save("TileWater", 128, 128, tile(((0.12, 0.38, 0.55), (0.22, 0.55, 0.72), (0, 0, 0)), 1.0, waves=True), out)

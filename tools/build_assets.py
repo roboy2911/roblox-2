@@ -8,6 +8,7 @@ Run the Blender scripts first so everything is in one folder:
     python blender/characters.py blender/out
     python blender/nature.py blender/out
     python blender/weapons.py blender/out
+    python blender/whisperwood.py blender/out
     python blender/effects.py blender/out
 Then:
     python tools/build_assets.py blender/out
@@ -30,8 +31,10 @@ ASSETS_LUAU = os.path.join(ROOT, "src", "shared", "Config", "Assets.luau")
 
 MODELS = ["TrainingDummy", "Rat", "Barrel", "HayBale", "Crate", "Tent", "Campfire", "Sign", "DirtPad", "Stall",
           "QuestGiver", "BanditThug", "GemMerchant", "Tree", "EmberGem",
-          "IronSword", "BattleAxe", "Blacksmith", "Anvil", "BanditCaptain"]
-IMAGES = ["FxSpark", "FxDust", "FxGlow", "FxRing", "FxTrail", "FxFlame"]
+          "IronSword", "BattleAxe", "Blacksmith", "Anvil", "BanditCaptain",
+          "Wolf", "Goblin", "GoblinKing", "Ranger", "Rowboat", "Dock", "Rock"]
+IMAGES = ["FxSpark", "FxDust", "FxGlow", "FxRing", "FxTrail", "FxFlame",
+          "TileGrass", "TileForest", "TileSand", "TileWater"]
 
 
 def sha(path):

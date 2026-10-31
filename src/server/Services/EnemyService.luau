@@ -19,6 +19,7 @@ local EnemyRig = require(script.Parent.EnemyRig)
 local LevelingService = require(script.Parent.LevelingService)
 local Props = require(script.Parent.Props)
 local QuestService = require(script.Parent.QuestService)
+local GemSpawner = require(script.Parent.GemSpawner)
 
 local ENEMY_TAG = "Enemy"
 local THINK_INTERVAL = 0.1
@@ -100,6 +101,19 @@ local function knockback(enemy: Enemy, attacker: Player?, heavy: boolean)
 	enemy.Root.AssemblyLinearVelocity = (direction * (if heavy then 34 else 12) + Vector3.new(0, if heavy then 32 else 6, 0)) * scale
 end
 
+-- Rare drops (e.g. a gem from a boss) land on the ground where it died.
+local function rollDrops(enemy: Enemy)
+	for _, drop in enemy.Config.Drops or {} do
+		if drop.Gem and rng:NextNumber() < drop.Chance then
+			local spot = enemy.Root.Position
+			GemSpawner.SpawnPickup(drop.Gem, spot, 120)
+			for _, player in Players:GetPlayers() do
+				Remotes.Notify:FireClient(player, ("The %s dropped a gem!"):format(enemy.Config.DisplayName))
+			end
+		end
+	end
+end
+
 local function giveRewards(enemy: Enemy, contributors: { [Player]: number })
 	local maxHealth = enemy.Model:GetAttribute("MaxHealth") or 1
 	local position = enemy.Root.Position
@@ -159,6 +173,7 @@ local function onDied(enemy: Enemy, contributors: { [Player]: number })
 	end
 	cancelAttack(enemy)
 	giveRewards(enemy, contributors)
+	rollDrops(enemy)
 	playDeath(enemy.Model, enemy.Root)
 	task.delay(enemy.Config.RespawnTime, function()
 		if not (enemy.Config.Boss and bosses[enemy.Area]) then -- /spawnboss may have brought it back already

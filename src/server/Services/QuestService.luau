@@ -165,7 +165,7 @@ local function spawnGiver(giverId: string, giver)
 	folder.Parent = workspace
 
 	local model, position = NpcBuilder.Spawn({
-		Model = "QuestGiver",
+		Model = giver.Model or "QuestGiver",
 		DisplayName = giver.DisplayName,
 		Position = giver.Position,
 		Parent = folder,
@@ -180,6 +180,9 @@ local function spawnGiver(giverId: string, giver)
 	CollectionService:AddTag(model, GIVER_TAG) -- shows the "!" marker
 	giverModels[giverId] = model
 
+	if giverId ~= "Millbrook" then
+		return -- only Millbrook has the market corner
+	end
 	local toSpawn = model:GetPivot().LookVector
 	local side = toSpawn:Cross(Vector3.yAxis)
 	Props.Place("Stall", position + side * 7 - toSpawn * 2, toSpawn, folder)

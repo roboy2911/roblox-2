@@ -15,6 +15,7 @@ Build order steps from the design doc:
 - [x] **6. Weapons and shop:** Iron Sword and Battle Axe from Blacksmith Torvin; slots 1 Style, 2 Weapon, 3 Gem.
 - [x] **7. First boss:** Bandit Captain (Lv. 25) with Cleave and Leap Slam, boss HP bar, quest from Bram.
 - [x] **8. Stats menu:** spend stat points (M or the Stats button), reset for 50 gold per level.
+- [ ] **9. Fill out Greenvale:** part 1 done (sea, islands, rowboats, Whisperwood Forest). Next: Stonebridge, Frostpeak + Frost Gem, Stormwatch + Storm Gem.
 
 ## Setup
 
@@ -104,6 +105,14 @@ Build order steps from the design doc:
   you, he jumps and smashes it). Get out of the red. Hits don't stun or interrupt him.
 - Drops 1,500 XP and 400 to 600 gold. Bram's quest **The Bandit Captain** (Lv. 20+) pays extra.
 - Studio shortcut: `/spawnboss`.
+
+**Step 9, part 1: the sea and Whisperwood Forest**
+
+- The Baseplate is hidden; Millbrook is now an island in the sea. Walking in water is slow.
+- Get a rowboat at the dock (south side of Millbrook, press E). Sit in it, steer with WASD.
+- **Whisperwood Forest** (Lv. 30-90) is south across the water: Wolf Den (Lv. 40),
+  Goblin Camp (Lv. 60), and the **Goblin King** boss (Lv. 75, 5% chance to drop an Ember Gem).
+- **Ranger Elda** by the dock gives three quests. You respawn on the last island you visited.
 
 ## Project layout
 
