@@ -164,6 +164,42 @@ function HitEffects.DamageNumber(position: Vector3, amount: number, big: boolean
 	Debris:AddItem(anchor, 0.85)
 end
 
+-- Text that floats up from a spot in the world and fades (rewards, etc).
+function HitEffects.FloatingText(position: Vector3, message: string, color: Color3, size: number, delay: number?)
+	task.delay(delay or 0, function()
+		local anchor = Instance.new("Attachment")
+		anchor.WorldPosition = position
+		anchor.Parent = workspace.Terrain
+
+		local gui = Instance.new("BillboardGui")
+		gui.Size = UDim2.fromOffset(220, 50)
+		gui.AlwaysOnTop = true
+		gui.Adornee = anchor
+		gui.Parent = player:WaitForChild("PlayerGui")
+
+		local text = Instance.new("TextLabel")
+		text.Size = UDim2.fromScale(1, 1)
+		text.BackgroundTransparency = 1
+		text.Font = Enum.Font.Fantasy
+		text.Text = message
+		text.TextSize = size
+		text.TextColor3 = color
+		text.TextStrokeTransparency = 0.2
+		text.Parent = gui
+
+		local pop = Instance.new("UIScale")
+		pop.Scale = 0.4
+		pop.Parent = text
+		tween(pop, 0.2, { Scale = 1 }, Enum.EasingStyle.Back)
+		tween(anchor, 1.6, { WorldPosition = position + Vector3.new(0, 3, 0) })
+		task.delay(0.9, function()
+			tween(text, 0.7, { TextTransparency = 1, TextStrokeTransparency = 1 })
+		end)
+		Debris:AddItem(gui, 1.7)
+		Debris:AddItem(anchor, 1.7)
+	end)
+end
+
 -- Camera shake ------------------------------------------------------------
 
 local shakes: { { Strength: number, Duration: number, Age: number } } = {}

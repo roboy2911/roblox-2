@@ -11,8 +11,13 @@ Damageable.Tag = "Damageable"
 
 type DiedCallback = (model: Model, contributors: { [Player]: number }) -> ()
 
+-- Extra details about a hit, e.g. { Heavy = true } for the last combo hit.
+export type HitInfo = { Heavy: boolean? }
+type DamagedCallback = (model: Model, amount: number, attacker: Player?, info: HitInfo) -> ()
+
 local contributors: { [Model]: { [Player]: number } } = setmetatable({}, { __mode = "k" }) :: any
 local diedCallbacks: { [Model]: { DiedCallback } } = setmetatable({}, { __mode = "k" }) :: any
+local damagedCallbacks: { [Model]: { DamagedCallback } } = setmetatable({}, { __mode = "k" }) :: any
 
 export type Options = {
 	DisplayName: string,
@@ -46,13 +51,19 @@ function Damageable.OnDied(model: Model, callback: DiedCallback)
 	table.insert(diedCallbacks[model], callback)
 end
 
+-- Runs every time the model takes damage (but not on the killing hit).
+function Damageable.OnDamaged(model: Model, callback: DamagedCallback)
+	damagedCallbacks[model] = damagedCallbacks[model] or {}
+	table.insert(damagedCallbacks[model], callback)
+end
+
 function Damageable.Stun(model: Model, seconds: number)
 	local untilTime = workspace:GetServerTimeNow() + seconds
 	model:SetAttribute("StunnedUntil", math.max(untilTime, model:GetAttribute("StunnedUntil") or 0))
 end
 
 -- Deals damage. Returns the damage actually dealt and whether it killed.
-function Damageable.ApplyDamage(model: Model, amount: number, attacker: Player?): (number, boolean)
+function Damageable.ApplyDamage(model: Model, amount: number, attacker: Player?, info: HitInfo?): (number, boolean)
 	if not Damageable.IsAlive(model) then
 		return 0, false
 	end
@@ -77,7 +88,18 @@ function Damageable.ApplyDamage(model: Model, amount: number, attacker: Player?)
 		end
 		return dealt, true
 	end
+	for _, callback in damagedCallbacks[model] or {} do
+		task.spawn(callback, model, dealt, attacker, info or {})
+	end
 	return dealt, false
+end
+
+-- Restores health to full without reviving (e.g. an enemy walking home).
+function Damageable.Heal(model: Model)
+	if Damageable.IsAlive(model) then
+		model:SetAttribute("Health", model:GetAttribute("MaxHealth"))
+		contributors[model] = {}
+	end
 end
 
 -- Brings a dead target back to full health.

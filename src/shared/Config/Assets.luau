@@ -2,4 +2,5 @@
 
 return {
 	TrainingDummy = 105475260329338,
+	Rat = 127699285698034,
 }

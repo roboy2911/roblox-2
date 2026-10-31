@@ -71,7 +71,7 @@ local function resolveHit(player: Player, style, move, aim: any)
 	local look = aimDirection(rootPart, aim)
 	for _, target in findTargets(rootPart.Position, look, style) do
 		local damage = Combat.CalculateDamage(move.Damage, statPoints, target:GetAttribute("Defense") or 0)
-		local dealt, killed = Damageable.ApplyDamage(target, damage, player)
+		local dealt, killed = Damageable.ApplyDamage(target, damage, player, { Heavy = move.Heavy == true })
 		if dealt > 0 then
 			Damageable.Stun(target, style.Stun)
 			Remotes.HitEffect:FireAllClients(player, target, dealt, killed, move.Heavy == true)

@@ -9,7 +9,7 @@ Build order steps from the design doc:
 
 - [x] **1. Saving and leveling:** XP, levels (cap 300), 3 stat points per level, a level bar. Data saves with DataStores.
 - [x] **2. Basic combat:** Brawler 3-hit click combo, HP bars, three training dummies.
-- [ ] 3. Enemies (Rats)
+- [x] **3. Enemies:** Rats that wander, chase, bite, die, drop XP and gold, and respawn.
 - [ ] 4. Quests
 
 ## Setup
@@ -52,19 +52,29 @@ Build order steps from the design doc:
 - Defeat a dummy for 40 XP; it falls over and gets back up after 3 seconds.
 - Punch animations need R15 characters (Game Settings > Avatar).
 
+**Step 3, enemies**
+
+- Walk to the **Rat Field** (dirt patch with barrels and hay, to the left of spawn).
+- Rats wander around. Get close and they chase you. Before biting they rear back:
+  move away or behind them to dodge.
+- Your hits interrupt bites and knock rats back; the uppercut launches them.
+- A rat gives 30 XP and 8 to 14 gold, then respawns 15 seconds later.
+- Lead a rat far from its field and it gives up, walks home and heals.
+
 ## Project layout
 
 ```
 src/shared/          ReplicatedStorage.Shared (used by server and client)
-  Config/            numbers from the design doc: leveling, combat, asset IDs
+  Config/            numbers from the design doc: leveling, combat, enemies, asset IDs
   Remotes.luau       all RemoteEvents
 src/server/          ServerScriptService.Server
   Main.server.luau   starts the services
   Services/          DataService, LevelingService, CharacterService,
-                     CombatService, Damageable, TrainingGround, DevCommands
+                     CombatService, Damageable, TrainingGround,
+                     EnemyRig, EnemyService, DevCommands
 src/client/          StarterPlayerScripts.Client
   Main.client.luau   starts the controllers
-  Controllers/       HUD, CombatController, HealthBars
+  Controllers/       HUD, CombatController, HealthBars, EnemyAnimator, Feedback
   Combat/            punch keyframes, the animator that plays them, hit effects
 blender/             Blender scripts that build the 3D models
 tools/               upload_model.py: uploads a model to Roblox with Open Cloud

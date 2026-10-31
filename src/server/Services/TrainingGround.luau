@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
 local Assets = require(ReplicatedStorage.Shared.Config.Assets)
+local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Damageable = require(script.Parent.Damageable)
 local LevelingService = require(script.Parent.LevelingService)
 
@@ -217,6 +218,7 @@ function TrainingGround.Start()
 			for player in contributors do
 				if player.Parent then
 					LevelingService.AddXP(player, DUMMY_XP)
+					Remotes.Reward:FireClient(player, dummy:GetPivot().Position + Vector3.new(0, DUMMY_HEIGHT * 0.6, 0), DUMMY_XP, 0)
 				end
 			end
 			tip(dummy, standing, true)

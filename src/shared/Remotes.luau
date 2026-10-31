@@ -35,6 +35,8 @@ return {
 	Attack = remote("Attack"), -- client -> server: player clicked (with aim direction)
 	Swing = remote("Swing"), -- server -> all: someone swung (to play their animation)
 	HitEffect = remote("HitEffect"), -- server -> all: a hit landed (effects, damage numbers)
+	PlayerHit = remote("PlayerHit"), -- server -> player: an enemy hit you
+	Reward = remote("Reward"), -- server -> player: XP and gold earned (floating text)
 	LevelUp = remote("LevelUp"), -- server -> player: new level reached
 	Notify = remote("Notify"), -- server -> player: short message on screen
 }

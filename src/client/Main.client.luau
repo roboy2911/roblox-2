@@ -2,7 +2,13 @@
 
 local Controllers = script.Parent.Controllers
 
-for _, name in { "HUD", "CombatController", "HealthBars" } do
-	local controller = require(Controllers[name]) :: any
-	controller.Start()
+for _, name in { "HUD", "CombatController", "HealthBars", "EnemyAnimator", "Feedback" } do
+	-- If one fails, warn and keep going so the rest still start.
+	local ok, err = pcall(function()
+		local controller = require(Controllers[name]) :: any
+		controller.Start()
+	end)
+	if not ok then
+		warn(("[Main] %s failed to start: %s"):format(name, tostring(err)))
+	end
 end
