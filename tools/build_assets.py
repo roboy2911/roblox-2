@@ -7,6 +7,7 @@ Run the Blender scripts first so everything is in one folder:
     python blender/props.py blender/out
     python blender/characters.py blender/out
     python blender/nature.py blender/out
+    python blender/weapons.py blender/out
     python blender/effects.py blender/out
 Then:
     python tools/build_assets.py blender/out
@@ -28,7 +29,8 @@ MANIFEST = os.path.join(ROOT, "tools", "asset_manifest.json")
 ASSETS_LUAU = os.path.join(ROOT, "src", "shared", "Config", "Assets.luau")
 
 MODELS = ["TrainingDummy", "Rat", "Barrel", "HayBale", "Crate", "Tent", "Campfire", "Sign", "DirtPad", "Stall",
-          "QuestGiver", "BanditThug", "GemMerchant", "Tree", "EmberGem"]
+          "QuestGiver", "BanditThug", "GemMerchant", "Tree", "EmberGem",
+          "IronSword", "BattleAxe", "Blacksmith", "Anvil"]
 IMAGES = ["FxSpark", "FxDust", "FxGlow", "FxRing", "FxTrail", "FxFlame"]
 
 

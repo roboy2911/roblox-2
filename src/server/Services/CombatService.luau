@@ -8,6 +8,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Combat = require(ReplicatedStorage.Shared.Config.Combat)
+local Loadout = require(ReplicatedStorage.Shared.Loadout)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local DataService = require(script.Parent.DataService)
 local Damageable = require(script.Parent.Damageable)
@@ -17,7 +18,7 @@ local LATENCY_GRACE = 0.08
 -- Extra reach for big targets, measured from their pivot.
 local DEFAULT_HIT_RADIUS = 1.5
 
-type ComboState = { Index: number, LastSwing: number, ReadyAt: number }
+type ComboState = { Index: number, LastSwing: number, ReadyAt: number, SetId: string }
 
 local CombatService = {}
 
@@ -86,12 +87,17 @@ local function onAttack(player: Player, aim: any)
 		return
 	end
 
-	local style = Combat.Styles[Combat.DefaultStyle]
+	-- The click combo of the selected slot (fists, weapon or fire fists).
+	local style, setId = Loadout.Attack(Loadout.Of(player))
 	local now = os.clock()
 	local state = states[player]
 	if not state then
-		state = { Index = 0, LastSwing = 0, ReadyAt = 0 }
+		state = { Index = 0, LastSwing = 0, ReadyAt = 0, SetId = setId }
 		states[player] = state
+	end
+	if state.SetId ~= setId then
+		state.SetId = setId
+		state.Index = 0
 	end
 	if now < state.ReadyAt - LATENCY_GRACE then
 		return
@@ -106,7 +112,7 @@ local function onAttack(player: Player, aim: any)
 	state.ReadyAt = now + (if isLast then style.ComboEndCooldown else style.SwingCooldown)
 
 	local move = style.Combo[state.Index]
-	Remotes.Swing:FireAllClients(player, state.Index)
+	Remotes.Swing:FireAllClients(player, setId, state.Index)
 	task.delay(move.HitDelay or 0, resolveHit, player, style, move, aim)
 end
 

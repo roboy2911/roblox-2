@@ -4,6 +4,7 @@
 
 QuestGiver parts: Body, Head
 GemMerchant parts: Body, Head
+Blacksmith parts: Body, Head
 BanditThug parts: Torso, Head, ArmL, ArmR (holds the sword), LegL, LegR
 """
 
@@ -151,9 +152,49 @@ def gem_merchant():
     c.join(head, "Head")
 
 
+def blacksmith():
+    shirt = c.cloth("Shirt", color=(0.55, 0.45, 0.35), weave=70)
+    apron = c.skin("Apron", color=(0.3, 0.18, 0.09))
+    pants = c.cloth("Pants", color=(0.25, 0.22, 0.2), weave=80)
+    skin = c.skin("Skin", color=(0.78, 0.55, 0.4))
+    beard = c.fur("Beard", color=(0.5, 0.22, 0.08), streak_axis="Z")
+    boots = c.skin("Boots", color=(0.2, 0.12, 0.06))
+    iron = c.metal("Iron", color=(0.32, 0.31, 0.3))
+    handle = c.wood("Handle", grain_axis="Z")
+    eye = c.solid("Eye", (0.05, 0.05, 0.08), 0.2)
+
+    body = [
+        c.paint(c.cylinder(0.95, 1.9, (0, 0, 3.15), verts=14, top_radius=1.05), shirt),
+        c.paint(c.sphere(1, (0, 0, 4.05), scale=(1.1, 0.6, 0.38)), shirt),
+        c.paint(c.box((1.5, 0.12, 2.6), (0, -0.92, 2.6)), apron),
+        c.paint(c.cylinder(0.98, 0.18, (0, 0, 2.6), verts=14), apron),
+    ]
+    for side in (1, -1):
+        body.append(c.paint(c.cylinder(0.38, 2.3, (0.45 * side, 0, 1.15), verts=10), pants))
+        body.append(c.paint(c.box((0.6, 0.95, 0.5), (0.45 * side, -0.12, 0.25)), boots))
+        # Big bare forearms.
+        body.append(c.paint(c.cylinder(0.33, 0.8, (1.2 * side, 0, 3.75), verts=10), shirt))
+        body.append(c.paint(c.cylinder(0.3, 1.0, (1.25 * side, -0.1, 2.9), rot=(math.radians(-10), 0, 0), verts=10), skin))
+        body.append(c.paint(c.sphere(0.3, (1.27 * side, -0.2, 2.3)), skin))
+    # Hammer in the right hand, head resting down.
+    body.append(c.paint(c.cylinder(0.07, 1.6, (1.27, -0.25, 1.75), verts=8), handle))
+    body.append(c.paint(c.box((0.35, 0.7, 0.35), (1.27, -0.25, 0.95)), iron))
+    c.join(body, "Body")
+
+    head = [
+        c.paint(c.sphere(0.5, (0, 0, 4.72)), skin),
+        c.paint(c.sphere(0.48, (0, -0.12, 4.42), scale=(1.05, 0.85, 0.75)), beard),
+        c.paint(c.sphere(0.13, (0, -0.5, 4.68), segments=8, rings=6), skin),
+        c.paint(c.cylinder(0.52, 0.18, (0, 0, 5.0), verts=14), apron),  # leather headband/cap
+    ]
+    eyes(head, 4.82, -0.44, 0.17, 0.065, eye, beard, angry=False)
+    c.join(head, "Head")
+
+
 CHARACTERS = {
     "QuestGiver": (quest_giver, {"camera": (4.5, -7.5, 4.2), "target": (0, 0, 2.9), "size": (480, 640)}),
     "GemMerchant": (gem_merchant, {"camera": (4.5, -7.5, 4.0), "target": (0, 0, 2.6), "size": (480, 640)}),
+    "Blacksmith": (blacksmith, {"camera": (4.5, -7.5, 4.0), "target": (0, 0, 2.7), "size": (480, 640)}),
     "BanditThug": (bandit_thug, {"camera": (5, -7.5, 4.2), "target": (0, -0.6, 2.8), "size": (480, 640)}),
 }
 

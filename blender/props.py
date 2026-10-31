@@ -154,6 +154,22 @@ def stall():
     c.join(parts, "Stall")
 
 
+def anvil():
+    iron = c.metal("AnvilIron", color=(0.25, 0.25, 0.26), scratches=0.35)
+    stump = c.wood("Stump", light=(0.45, 0.3, 0.16), dark=(0.22, 0.13, 0.06), grain_axis="Z")
+    parts = [
+        c.paint(c.cylinder(0.85, 1.5, (0, 0, 0.75), verts=14), stump),
+        c.paint(c.box((0.9, 0.6, 0.35), (0, 0, 1.68)), iron),
+        c.paint(c.box((0.5, 0.45, 0.35), (0, 0, 2.0)), iron),
+        c.paint(c.box((1.6, 0.6, 0.3), (0.1, 0, 2.3)), iron),
+    ]
+    c.bpy.ops.mesh.primitive_cone_add(vertices=4, radius1=0.3, radius2=0.02, depth=0.7, location=(1.25, 0, 2.3), rotation=(0, math.radians(90), math.radians(45)))
+    horn = c.bpy.context.active_object
+    horn.scale = (0.7, 1, 1)
+    parts.append(c.paint(horn, iron))
+    c.join(parts, "Anvil")
+
+
 PROPS = {
     "Barrel": (barrel, 512, {"camera": (4, -5, 3), "target": (0, 0, 1.2)}),
     "HayBale": (hay_bale, 512, {"camera": (4, -5, 3), "target": (0, 0, 1)}),
@@ -162,6 +178,7 @@ PROPS = {
     "Campfire": (campfire, 512, {"camera": (3, -3.5, 2.5), "target": (0, 0, 0.2)}),
     "Sign": (sign, 512, {"camera": (5, -8, 4.5), "target": (0, 0, 3.5)}),
     "DirtPad": (dirt_pad, 1024, {"camera": (0, -30, 25), "target": (0, 0, 0)}),
+    "Anvil": (anvil, 512, {"camera": (3.5, -4.5, 3), "target": (0, 0, 1.4)}),
     "Stall": (stall, 1024, {"camera": (6, -9, 5), "target": (0, 0, 2.5)}),
 }
 

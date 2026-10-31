@@ -12,6 +12,7 @@ Build order steps from the design doc:
 - [x] **3. Enemies:** Rats that wander, chase, bite, die, drop XP and gold, and respawn.
 - [x] **4. Quests:** Elder Bram in Millbrook gives a Rats quest and a Bandit Thugs quest (Lv. 10+).
 - [x] **5. First gem:** Ember Gem (Fireball, Flame Dash, Fire Ring) with energy and cooldowns; found under trees or bought from the Gem Merchant.
+- [x] **6. Weapons and shop:** Iron Sword and Battle Axe from Blacksmith Torvin; slots 1 Style, 2 Weapon, 3 Gem.
 
 ## Setup
 
@@ -84,6 +85,15 @@ Build order steps from the design doc:
 - Moves cost energy (blue bar) and have cooldowns (shown on the ability bar).
   Locked moves show the level they unlock at.
 - Studio shortcuts: `/gem` (eat Ember), `/gem none`, `/spawngem`, `/level 75`.
+
+**Step 6, weapons and slots**
+
+- Keys **1 / 2 / 3** pick Brawler, your weapon, or your gem (hotbar above the moves).
+  Click and Z/X/C use the selected slot. Gem slot clicks are fire punches.
+- **Blacksmith Torvin** (near spawn) sells the Iron Sword (500) and Battle Axe (5,000).
+- Brawler: Z Punch Flurry, X Shoulder Charge. Sword: Z Slash Combo, X Lunge.
+  Axe: Z Overhead Chop, X Whirlwind.
+- Studio shortcuts: `/weapon` (sword), `/weapon axe`.
 
 ## Project layout
 

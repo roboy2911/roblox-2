@@ -5,6 +5,7 @@
 --   /level 10     jump to a level
 --   /gem          eat the Ember Gem (/gem none removes it)
 --   /spawngem     put a gem under a tree right now
+--   /weapon axe   get a weapon (sword or axe)
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -19,6 +20,7 @@ local CharacterService = require(script.Parent.CharacterService)
 local QuestService = require(script.Parent.QuestService)
 local GemService = require(script.Parent.GemService)
 local GemSpawner = require(script.Parent.GemSpawner)
+local LoadoutService = require(script.Parent.LoadoutService)
 
 local DevCommands = {}
 
@@ -47,6 +49,9 @@ local commands = {
 		else
 			GemService.SetGem(player, "Ember")
 		end
+	end,
+	weapon = function(player: Player, _: number?, word: string?)
+		LoadoutService.GiveWeapon(player, if word == "axe" then "BattleAxe" else "IronSword")
 	end,
 	spawngem = function(player: Player)
 		if not GemSpawner.SpawnGem() then

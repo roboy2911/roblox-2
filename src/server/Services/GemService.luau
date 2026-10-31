@@ -1,13 +1,13 @@
--- Gems and their moves. A player holds one gem at a time (eating a new one
--- replaces it). Pressing Z / X / C casts that gem's moves, if the player's
--- level is high enough, the move is off cooldown and there's enough energy.
+-- Moves on Z / X / C for whichever build slot is selected (style, weapon
+-- or gem), plus gems themselves (one at a time; eating a new one replaces it).
 --
--- The server decides what gets hit; every client is told so it can draw
--- the effects (Remotes.AbilityFx). The caster's client moves the caster
--- during Flame Dash, since it controls its own character.
+-- A move is cast if the player's level is high enough, it's off cooldown
+-- and there's enough energy. The server decides what gets hit; every client
+-- is told so it can draw the effects (Remotes.AbilityFx). The caster's
+-- client moves the caster during dashes, since it controls its own character.
 --
--- Player attributes: Gem (gem id or ""), CD_Z / CD_X / CD_C (server time
--- when each move is ready again).
+-- Player attributes: Gem (gem id or ""), CD_<Slot>_<Key> (server time when
+-- that move is ready again, e.g. CD_Weapon_Z).
 
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
@@ -20,6 +20,8 @@ local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local DataService = require(script.Parent.DataService)
 local Damageable = require(script.Parent.Damageable)
 local EnergyService = require(script.Parent.EnergyService)
+local LoadoutService = require(script.Parent.LoadoutService)
+local Loadout = require(ReplicatedStorage.Shared.Loadout)
 
 local KEYS = { Z = true, X = true, C = true }
 local COOLDOWN_GRACE = 0.1 -- allow a press to arrive a little early
@@ -57,12 +59,13 @@ local function hitRadius(model: Model): number
 	return model:GetAttribute("HitRadius") or 1.5
 end
 
-local function damage(player: Player, target: Model, base: number, stun: number, heavy: boolean)
+-- Stat that boosts the move being cast (set per cast; see onUseAbility).
+local function damage(player: Player, target: Model, base: number, stun: number, heavy: boolean, stat: string)
 	local profile = DataService.Get(player)
 	if not profile then
 		return
 	end
-	local amount = Combat.CalculateDamage(base, profile.Data.Stats.GemPower, target:GetAttribute("Defense") or 0)
+	local amount = Combat.CalculateDamage(base, profile.Data.Stats[stat] or 0, target:GetAttribute("Defense") or 0)
 	local dealt, killed = Damageable.ApplyDamage(target, amount, player, { Heavy = heavy })
 	if dealt > 0 then
 		Damageable.Stun(target, stun)
@@ -83,7 +86,7 @@ end
 
 -- Moves -------------------------------------------------------------------
 
-local function fireball(player: Player, root: BasePart, move, aim: any)
+local function projectile(player: Player, root: BasePart, move, aim: any, stat: string)
 	local look = flat(root.CFrame.LookVector).Unit
 	local origin = root.Position + Vector3.new(0, 1.2, 0) + look * 2
 	local direction = look
@@ -114,7 +117,7 @@ local function fireball(player: Player, root: BasePart, move, aim: any)
 			Remotes.AbilityFx:FireAllClients("FireballHit", player, id, at)
 			for _, target in targets() do
 				if (center(target) - at).Magnitude <= move.BlastRadius + hitRadius(target) then
-					damage(player, target, move.Damage, move.Stun, false)
+					damage(player, target, move.Damage, move.Stun, false, stat)
 				end
 			end
 		end
@@ -149,15 +152,15 @@ local function fireball(player: Player, root: BasePart, move, aim: any)
 	end)
 end
 
-local function flameDash(player: Player, root: BasePart, move, aim: any)
+-- Rush forward, hitting everything along the path actually taken.
+local function dash(player: Player, root: BasePart, move, aim: any, stat: string)
 	local direction = flat(root.CFrame.LookVector).Unit
 	if validVector(aim) and flat(aim).Magnitude > 0.01 then
 		direction = flat(aim).Unit
 	end
 	local start = root.Position
-	Remotes.AbilityFx:FireAllClients("FlameDash", player, start, direction, move.Distance, move.DashTime)
+	Remotes.AbilityFx:FireAllClients("Dash", player, start, direction, move.Distance, move.DashTime, move.Fx, move.Animation)
 
-	-- Burn everything along the path the player actually took.
 	task.delay(move.DashTime + 0.05, function()
 		if not root.Parent then
 			return
@@ -171,31 +174,61 @@ local function flameDash(player: Player, root: BasePart, move, aim: any)
 			local along = flat(finish - start)
 			local closest = distanceToSegment(flat(center(target)), flat(start), flat(start) + along)
 			if closest <= move.HitWidth + hitRadius(target) and offset.Magnitude <= along.Magnitude + move.HitWidth + 2 then
-				damage(player, target, move.Damage, move.Stun, false)
+				damage(player, target, move.Damage, move.Stun, move.Heavy == true, stat)
 			end
 		end
 	end)
 end
 
-local function fireRing(player: Player, root: BasePart, move)
-	Remotes.AbilityFx:FireAllClients("FireRing", player, root.Position, move.Radius, move.CastTime)
-	task.delay(move.CastTime, function()
-		if not root.Parent then
-			return
-		end
-		local origin = root.Position
-		for _, target in targets() do
-			if flat(target:GetPivot().Position - origin).Magnitude <= move.Radius + hitRadius(target) then
-				damage(player, target, move.Damage, move.Stun, true) -- heavy: launches enemies
+-- Hits all around the caster, Hits times.
+local function burst(player: Player, root: BasePart, move, _aim: any, stat: string)
+	local hits = move.Hits or 1
+	Remotes.AbilityFx:FireAllClients("Burst", player, root.Position, move.Radius, move.CastTime, move.Fx, move.Animation, hits, move.Interval or 0)
+	for i = 1, hits do
+		task.delay(move.CastTime + (i - 1) * (move.Interval or 0), function()
+			if not root.Parent then
+				return
 			end
-		end
-	end)
+			local origin = root.Position
+			for _, target in targets() do
+				if flat(target:GetPivot().Position - origin).Magnitude <= move.Radius + hitRadius(target) then
+					-- One big hit launches enemies; multi-hit spins don't.
+					damage(player, target, move.Damage, move.Stun, hits == 1, stat)
+				end
+			end
+		end)
+	end
 end
 
-local MOVES = {
-	Fireball = fireball,
-	["Flame Dash"] = flameDash,
-	["Fire Ring"] = fireRing,
+-- Hits in front of the caster, Hits times (punch flurries, slash combos, chops).
+local function flurry(player: Player, root: BasePart, move, aim: any, stat: string)
+	local hits = move.Hits or 1
+	local look = flat(root.CFrame.LookVector).Unit
+	if validVector(aim) and flat(aim).Magnitude > 0.01 then
+		look = flat(aim).Unit
+	end
+	Remotes.AbilityFx:FireAllClients("Flurry", player, move.Animation, move.Fx, move.Delay, hits, move.Interval or 0)
+	for i = 1, hits do
+		task.delay(move.Delay + (i - 1) * (move.Interval or 0), function()
+			if not root.Parent then
+				return
+			end
+			for _, target in targets() do
+				local offset = flat(target:GetPivot().Position - root.Position)
+				local inReach = offset.Magnitude <= move.Range + hitRadius(target)
+				if inReach and (offset.Magnitude < 0.5 or look:Dot(offset.Unit) >= move.Arc) then
+					damage(player, target, move.Damage, move.Stun, move.Heavy == true and i == hits, stat)
+				end
+			end
+		end)
+	end
+end
+
+local KINDS = {
+	Projectile = projectile,
+	Dash = dash,
+	Burst = burst,
+	Flurry = flurry,
 }
 
 -- Using moves ---------------------------------------------------------------
@@ -205,9 +238,14 @@ local function onUseAbility(player: Player, key: any, aim: any)
 		return
 	end
 	local profile = DataService.Get(player)
-	local gem = profile and Gems.List[profile.Data.Gem]
-	local move = gem and gem.Moves[key]
-	if not profile or not move or profile.Data.Level < move.Level then
+	if not profile then
+		return
+	end
+	-- Moves come from the selected slot (style, weapon or gem).
+	local state = Loadout.Of(player)
+	local moves = Loadout.Moves(state)
+	local move = moves and moves[key]
+	if not move or profile.Data.Level < move.Level then
 		return
 	end
 	local character = player.Character
@@ -217,19 +255,21 @@ local function onUseAbility(player: Player, key: any, aim: any)
 		return
 	end
 
+	local cooldownName = ("CD_%s_%s"):format(state.Slot, key)
 	local now = workspace:GetServerTimeNow()
-	local readyAt = player:GetAttribute("CD_" .. key) or 0
-	if now < readyAt - COOLDOWN_GRACE then
+	if now < (player:GetAttribute(cooldownName) or 0) - COOLDOWN_GRACE then
 		return
 	end
 	if not EnergyService.Spend(player, move.Energy) then
 		return
 	end
-	player:SetAttribute("CD_" .. key, now + move.Cooldown)
+	player:SetAttribute(cooldownName, now + move.Cooldown)
 
-	local cast = MOVES[move.Name]
+	local attack = Loadout.Attack(state)
+	local stat = if state.Slot == "Gem" then "GemPower" else attack.Stat
+	local cast = KINDS[move.Kind]
 	if cast then
-		cast(player, root, move, aim)
+		cast(player, root, move, aim, stat)
 	end
 end
 
@@ -242,11 +282,13 @@ function GemService.SetGem(player: Player, gemId: string)
 	profile.Data.Gem = gemId
 	player:SetAttribute("Gem", gemId)
 	for key in KEYS do
-		player:SetAttribute("CD_" .. key, 0)
+		player:SetAttribute("CD_Gem_" .. key, 0)
 	end
 	if gemId ~= "" then
 		Remotes.AbilityFx:FireAllClients("GemEaten", player, gemId)
 	end
+	-- Switch to the gem slot when you get one; leave it if the gem is gone.
+	LoadoutService.Select(player, if gemId ~= "" then "Gem" else "Style")
 end
 
 function GemService.Start()

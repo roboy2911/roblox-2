@@ -189,8 +189,38 @@ end
 
 -- Flame Dash ------------------------------------------------------------------
 
-local function onFlameDash(caster: Player, start: Vector3, direction: Vector3, distance: number, dashTime: number)
-	playCast(caster, "FlameDash")
+-- A puff of dust on the ground.
+local function dustPuff(position: Vector3, size: number, count: number, color: Color3?)
+	local anchor = anchorAt(CFrame.new(position))
+	local e = Instance.new("ParticleEmitter")
+	e.Texture = Images.Get("FxDust")
+	e.Color = ColorSequence.new(color or Color3.fromRGB(200, 180, 145))
+	e.Size = sequence(size, size * 2.5)
+	e.Transparency = sequence(0.35, 1)
+	e.Lifetime = NumberRange.new(0.4, 0.7)
+	e.Speed = NumberRange.new(3, 7)
+	e.SpreadAngle = Vector2.new(70, 70)
+	e.EmissionDirection = Enum.NormalId.Top
+	e.Drag = 3
+	e.Rotation = NumberRange.new(0, 360)
+	e.Enabled = false
+	e.Parent = anchor
+	e:Emit(count)
+	Debris:AddItem(anchor, 1)
+end
+
+-- A quick bright streak (sword lunges).
+local function streak(position: Vector3)
+	local anchor = anchorAt(CFrame.new(position))
+	local e = glow(anchor, 1.6, 0)
+	e.LockedToPart = false
+	e.Color = ColorSequence.new(Color3.fromRGB(225, 235, 255))
+	e.Lifetime = NumberRange.new(0.25)
+	e:Emit(1)
+	Debris:AddItem(anchor, 0.5)
+end
+
+local function flameDashTrail(caster: Player, start: Vector3, direction: Vector3, distance: number, dashTime: number)
 	local root = caster.Character and caster.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
 	if root then
 		local a = Instance.new("Attachment")
@@ -218,8 +248,7 @@ end
 
 -- Fire Ring ---------------------------------------------------------------------
 
-local function onFireRing(caster: Player, origin: Vector3, radius: number, castTime: number)
-	playCast(caster, "FireRing")
+local function fireRing(caster: Player, origin: Vector3, radius: number, castTime: number)
 	-- Embers gather around the caster while they crouch.
 	local gather = anchorAt(CFrame.new(origin))
 	local embers = glow(gather, 0.8, 50)
@@ -289,11 +318,85 @@ local function onGemEaten(eater: Player, _gemId: string)
 	end
 end
 
+-- Generic moves (any slot) ----------------------------------------------------------
+
+local function onDash(caster: Player, start: Vector3, direction: Vector3, distance: number, dashTime: number, fx: string, animation: string?)
+	if animation then
+		playCast(caster, animation)
+	end
+	if fx == "Fire" then
+		flameDashTrail(caster, start, direction, distance, dashTime)
+		return
+	end
+	local groundY = start.Y - 2.6
+	for d = 0, distance, 4 do
+		task.delay(dashTime * d / distance, function()
+			local spot = start + direction * d
+			if fx == "Steel" then
+				streak(spot)
+			end
+			dustPuff(Vector3.new(spot.X, groundY, spot.Z), 1, 3)
+		end)
+	end
+end
+
+local function onBurst(caster: Player, origin: Vector3, radius: number, castTime: number, fx: string, animation: string?, hits: number, interval: number)
+	if animation then
+		playCast(caster, animation)
+	end
+	if fx == "Fire" then
+		fireRing(caster, origin, radius, castTime)
+		return
+	end
+	for i = 1, hits do
+		task.delay(castTime + (i - 1) * interval, function()
+			local root = caster.Character and caster.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+			local center = if root then root.Position else origin
+			local anchor = anchorAt(CFrame.new(center))
+			local ring = Instance.new("ParticleEmitter")
+			ring.Texture = Images.Get("FxRing")
+			ring.Color = ColorSequence.new(Color3.fromRGB(235, 240, 255))
+			ring.LightEmission = 0.5
+			ring.Size = sequence(2, radius * 2)
+			ring.Transparency = sequence(0.3, 1)
+			ring.Lifetime = NumberRange.new(0.25)
+			ring.Speed = NumberRange.new(0)
+			ring.Rotation = NumberRange.new(0, 360)
+			ring.Enabled = false
+			ring.Parent = anchor
+			ring:Emit(1)
+			Debris:AddItem(anchor, 0.5)
+			dustPuff(center - Vector3.new(0, 2.6, 0), 1.6, 6)
+			nearbyShake(center, 0.6, radius * 2)
+		end)
+	end
+end
+
+local function onFlurry(caster: Player, animation: string?, fx: string, delay: number, _hits: number, _interval: number)
+	if animation then
+		playCast(caster, animation)
+	end
+	if fx == "Slam" then
+		-- The axe hits the ground in front: dust and a jolt.
+		task.delay(delay, function()
+			local root = caster.Character and caster.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+			if not root then
+				return
+			end
+			local spot = root.Position + root.CFrame.LookVector * 5 - Vector3.new(0, 2.6, 0)
+			dustPuff(spot, 2.5, 16)
+			HitEffects.Impact(spot + Vector3.new(0, 0.5, 0), Vector3.yAxis, true)
+			nearbyShake(spot, 2, 30)
+		end)
+	end
+end
+
 local HANDLERS = {
 	Fireball = onFireball,
 	FireballHit = onFireballHit,
-	FlameDash = onFlameDash,
-	FireRing = onFireRing,
+	Dash = onDash,
+	Burst = onBurst,
+	Flurry = onFlurry,
 	GemEaten = onGemEaten,
 }
 

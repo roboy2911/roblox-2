@@ -11,6 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
 local Combat = require(ReplicatedStorage.Shared.Config.Combat)
+local Loadout = require(ReplicatedStorage.Shared.Loadout)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local CombatFolder = script.Parent.Parent.Combat
 local Animator = require(CombatFolder.Animator)
@@ -18,7 +19,8 @@ local HitEffects = require(CombatFolder.HitEffects)
 local Movement = require(CombatFolder.Movement)
 
 local player = Players.LocalPlayer
-local style = Combat.Styles[Combat.DefaultStyle]
+local style = Combat.Styles[Combat.DefaultStyle] -- the selected slot's click combo
+local styleId = ""
 
 local DAMAGEABLE_TAG = "Damageable"
 local STOP_LUNGE_DISTANCE = 3.2 -- don't lunge into a target closer than this
@@ -66,6 +68,11 @@ local function tryAttack()
 	local now = os.clock()
 	if now < readyAt then
 		return
+	end
+	local current, currentId = Loadout.Attack(Loadout.Of(player))
+	if currentId ~= styleId then
+		style, styleId = current, currentId
+		comboIndex = 0
 	end
 	if now - lastSwing > style.ComboResetTime or comboIndex >= #style.Combo then
 		comboIndex = 0
@@ -134,8 +141,9 @@ function CombatController.Start()
 	end)
 
 	-- Other players' punches.
-	Remotes.Swing.OnClientEvent:Connect(function(attacker: Player, index: number)
-		local move = style.Combo[index]
+	Remotes.Swing.OnClientEvent:Connect(function(attacker: Player, setId: string, index: number)
+		local set = Loadout.AttackById(setId)
+		local move = set and set.Combo[index]
 		if attacker ~= player and attacker.Character and move then
 			Animator.Play(attacker.Character, move.Animation)
 		end

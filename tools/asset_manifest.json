@@ -1,4 +1,12 @@
 {
+  "Anvil.fbx": {
+    "id": "118542058241286",
+    "sha": "cbed6be21973e490cc9d448e871666c2d977a02e3ee6e0fbe58b3b792e9248b4"
+  },
+  "Anvil.png": {
+    "id": "137783339700287",
+    "sha": "009ef2a4c530bd4d2fa204059362eaedca88f16746f009c9ace36b46af907b7b"
+  },
   "BanditThug.fbx": {
     "id": "91339796650586",
     "sha": "b9fa239cfdce1bd5646f6d6ee565d798631e8da940b255a345b53217fff2dadf"
@@ -14,6 +22,22 @@
   "Barrel.png": {
     "id": "110399264589935",
     "sha": "3d09655f5bcb66c0d6fc37694f534f7950386019bf5d9bc477376a63f775ab7d"
+  },
+  "BattleAxe.fbx": {
+    "id": "105952758718979",
+    "sha": "0bcd9c7e6155c84ac2b81d1833d1022a7901842cfc0352e62bd53521c3e07a84"
+  },
+  "BattleAxe.png": {
+    "id": "87955386638853",
+    "sha": "01ff19b60254165f14ee4cadedce1b5ad95171eab95a4cbda125404690b6ba04"
+  },
+  "Blacksmith.fbx": {
+    "id": "71944898557943",
+    "sha": "8ac0af90c07dc12f7bee0f915b08b83fb5e49dbc835a3993944fc23b46619211"
+  },
+  "Blacksmith.png": {
+    "id": "93280765192640",
+    "sha": "953574c9022f5607d37e9e53647036f6c0cbd917e482432a446ffa22056e18f6"
   },
   "Campfire.fbx": {
     "id": "109980224444073",
@@ -86,6 +110,14 @@
   "HayBale.png": {
     "id": "71498694295914",
     "sha": "6b73a4068ade0e8c3d1159e8ef7c144a7d5b5a291af9a7ef9e0eb7a30849619e"
+  },
+  "IronSword.fbx": {
+    "id": "112163897921209",
+    "sha": "f1e59b146f66a834d077b726e65ab79e7d9be56bf8e65aca327e39080017613b"
+  },
+  "IronSword.png": {
+    "id": "93415184981749",
+    "sha": "a59d902971319698ff96c380d78942b1fbf47122799a3f45d6d32a3d2559937e"
   },
   "QuestGiver.fbx": {
     "id": "73334953594635",

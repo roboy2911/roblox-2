@@ -319,7 +319,7 @@ local FireRing: Animation = {
 	},
 }
 
-return {
+local all = {
 	CastFireball = CastFireball,
 	FlameDash = FlameDash,
 	FireRing = FireRing,
@@ -327,3 +327,10 @@ return {
 	JabLeft = mirror(JabRight),
 	UppercutRight = UppercutRight,
 }
+
+-- Weapon and other move animations live in their own file.
+for name, animation in require(script.Parent.WeaponAnimations)(JabRight, mirror) do
+	all[name] = animation
+end
+
+return all

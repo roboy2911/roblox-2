@@ -1,5 +1,6 @@
--- Little touches on things in the world. Right now: gems lying under trees
--- spin, bob, glow and give off embers so they're easy to spot.
+-- Little touches on things in the world:
+--   gems lying under trees spin, bob, glow and give off embers
+--   players with their gem slot selected have flames on their fists
 
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -8,7 +9,10 @@ local RunService = game:GetService("RunService")
 local Gems = require(ReplicatedStorage.Shared.Config.Gems)
 local Images = require(ReplicatedStorage.Shared.Images)
 
+local Players = game:GetService("Players")
+
 local PICKUP_TAG = "GemPickup"
+local FIST_FX = "FireFist"
 
 local WorldEffects = {}
 
@@ -50,7 +54,52 @@ local function add(model: Instance)
 	pickups[model] = model:GetPivot()
 end
 
+-- Adds or removes fist flames to match each player's selected slot.
+local function updateFists()
+	for _, player in Players:GetPlayers() do
+		local character = player.Character
+		if not character then
+			continue
+		end
+		local gem = Gems.List[player:GetAttribute("Gem") or ""]
+		local wanted = player:GetAttribute("Slot") == "Gem" and gem ~= nil
+		for _, handName in { "RightHand", "LeftHand" } do
+			local hand = character:FindFirstChild(handName)
+			if not hand then
+				continue
+			end
+			local existing = hand:FindFirstChild(FIST_FX)
+			if wanted and not existing then
+				local a = Instance.new("Attachment")
+				a.Name = FIST_FX
+				a.Parent = hand
+				local e = Instance.new("ParticleEmitter")
+				e.Texture = Images.Get("FxFlame")
+				e.Color = ColorSequence.new(Color3.fromRGB(255, 220, 140), gem.Color)
+				e.LightEmission = 1
+				e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.9), NumberSequenceKeypoint.new(1, 0.1) })
+				e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) })
+				e.Lifetime = NumberRange.new(0.2, 0.35)
+				e.Speed = NumberRange.new(0.5, 1.5)
+				e.SpreadAngle = Vector2.new(180, 180)
+				e.Acceleration = Vector3.new(0, 6, 0)
+				e.Rate = 30
+				e.Parent = a
+			elseif not wanted and existing then
+				existing:Destroy()
+			end
+		end
+	end
+end
+
 function WorldEffects.Start()
+	task.spawn(function()
+		while true do
+			task.wait(0.2)
+			updateFists()
+		end
+	end)
+
 	CollectionService:GetInstanceAddedSignal(PICKUP_TAG):Connect(function(model)
 		task.spawn(add, model)
 	end)

@@ -32,6 +32,9 @@ Leveling.DefaultData = {
 	},
 	Quest = { Id = "", Progress = 0 }, -- active quest ("" = none)
 	Gem = "", -- the gem you've eaten ("" = none)
+	Style = "Brawler", -- combat style
+	Weapon = "", -- equipped weapon ("" = none)
+	OwnedWeapons = {}, -- [weaponId] = true
 }
 
 function Leveling.MaxHealth(vitality: number): number

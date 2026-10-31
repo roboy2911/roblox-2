@@ -1,10 +1,10 @@
--- The Gem Merchant's shop window. Opens when you press E at the merchant.
+-- Shop window (Gem Merchant, Blacksmith). Opens when you press E at a shop.
+-- The server describes each item: name, info lines, price and button.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local Gems = require(ReplicatedStorage.Shared.Config.Gems)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 
 local player = Players.LocalPlayer
@@ -25,6 +25,7 @@ local ShopUI = {}
 
 local window: Frame
 local isOpen = false
+local shopPosition: Vector3? = nil
 
 local function corner(parent: Instance, radius: number)
 	local c = Instance.new("UICorner")
@@ -83,47 +84,42 @@ local function show(data)
 	text({ Text = '"' .. data.Greeting .. '"', TextSize = 15, Font = Enum.Font.GothamMedium, TextColor3 = COLORS.Muted, Position = UDim2.fromOffset(18, 46), Size = UDim2.new(1, -36, 0, 36), Parent = window })
 	text({ Text = ("Your gold: %d"):format(data.Gold), Font = Enum.Font.GothamBold, TextSize = 15, TextColor3 = COLORS.Gold, Position = UDim2.fromOffset(18, 82), Size = UDim2.new(1, -36, 0, 20), Parent = window })
 
+	local cardHeight = 150
 	for i, item in data.Items do
 		local card = Instance.new("Frame")
 		card:SetAttribute("Content", true)
-		card.Position = UDim2.fromOffset(18, 110 + (i - 1) * 140)
-		card.Size = UDim2.new(1, -36, 0, 130)
+		card.Position = UDim2.fromOffset(18, 110 + (i - 1) * (cardHeight + 10))
+		card.Size = UDim2.new(1, -36, 0, cardHeight)
 		card.BackgroundColor3 = COLORS.Card
 		card.Parent = window
 		corner(card, 8)
 
 		text({ Text = item.Name, Font = Enum.Font.Fantasy, TextSize = 24, TextColor3 = item.Color, Position = UDim2.fromOffset(12, 8), Size = UDim2.new(1, -150, 0, 26), Parent = card })
-		text({ Text = item.Rarity, Font = Enum.Font.GothamBold, TextSize = 13, TextColor3 = COLORS.Muted, Position = UDim2.fromOffset(12, 36), Size = UDim2.new(1, -150, 0, 16), Parent = card })
-		local lines = {}
-		for _, move in item.Moves do
-			table.insert(lines, ("%s  %s  (Lv. %d)"):format(move.Key, move.Name, move.Level))
+		text({ Text = item.Subtitle or "", Font = Enum.Font.GothamBold, TextSize = 13, TextColor3 = COLORS.Muted, Position = UDim2.fromOffset(12, 36), Size = UDim2.new(1, -150, 0, 16), Parent = card })
+		text({ Text = table.concat(item.Lines or {}, "\n"), TextSize = 14, Position = UDim2.fromOffset(12, 56), Size = UDim2.new(1, -150, 0, 72), Parent = card })
+		if item.Note then
+			text({ Text = item.Note, TextSize = 12, TextColor3 = Color3.fromRGB(230, 120, 100), Position = UDim2.fromOffset(12, cardHeight - 20), Size = UDim2.new(1, -150, 0, 16), Parent = card })
 		end
-		text({ Text = table.concat(lines, "\n"), TextSize = 14, Position = UDim2.fromOffset(12, 56), Size = UDim2.new(1, -150, 0, 54), Parent = card })
-
-		local current = data.CurrentGem
-		if current ~= "" and current ~= item.Id and Gems.List[current] then
-			text({ Text = "Replaces your " .. Gems.List[current].DisplayName, TextSize = 12, TextColor3 = Color3.fromRGB(230, 120, 100), Position = UDim2.fromOffset(12, 110), Size = UDim2.new(1, -150, 0, 16), Parent = card })
+		if item.Price then
+			text({ Text = ("%d Gold"):format(item.Price), Font = Enum.Font.GothamBold, TextSize = 16, TextColor3 = COLORS.Gold, TextXAlignment = Enum.TextXAlignment.Center,
+				AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -12, 0, 22), Size = UDim2.fromOffset(120, 20), Parent = card })
 		end
-
-		local price = text({ Text = ("%d Gold"):format(item.Price), Font = Enum.Font.GothamBold, TextSize = 16, TextColor3 = COLORS.Gold, TextXAlignment = Enum.TextXAlignment.Center,
-			AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -12, 0, 22), Size = UDim2.fromOffset(120, 20), Parent = card })
-		price:SetAttribute("Content", true)
-		local canAfford = data.Gold >= item.Price
-		local label = if item.Owned then "Owned" elseif canAfford then "Buy & Eat" else "Not enough gold"
-		local b = button(label, if item.Owned or not canAfford then COLORS.Disabled else COLORS.Button, function()
-			if not item.Owned and canAfford then
-				Remotes.ShopAction:FireServer("Buy", item.Id)
+		local enabled = item.Button.Enabled
+		local b = button(item.Button.Text, if enabled then COLORS.Button else COLORS.Disabled, function()
+			if enabled then
+				Remotes.ShopAction:FireServer(data.ShopId, item.Id)
 			end
 		end)
-		b.TextSize = if canAfford or item.Owned then 15 else 12
-		b.AutoButtonColor = canAfford and not item.Owned
+		b.TextSize = if #item.Button.Text > 12 then 12 else 15
+		b.AutoButtonColor = enabled
 		b.AnchorPoint = Vector2.new(1, 0)
 		b.Position = UDim2.new(1, -12, 0, 50)
 		b:SetAttribute("Content", true)
 		b.Parent = card
 	end
 
-	window.Size = UDim2.new(0.92, 0, 0, 124 + #data.Items * 140)
+	window.Size = UDim2.new(0.92, 0, 0, 124 + #data.Items * (cardHeight + 10))
+	shopPosition = data.Position
 	isOpen = true
 	window.Visible = true
 end
@@ -148,7 +144,7 @@ function ShopUI.Start()
 	stroke.Thickness = 2
 	stroke.Parent = window
 	local limit = Instance.new("UISizeConstraint")
-	limit.MaxSize = Vector2.new(520, 600)
+	limit.MaxSize = Vector2.new(520, 640)
 	limit.Parent = window
 
 	local x = button("X", COLORS.Danger, close)
@@ -165,7 +161,7 @@ function ShopUI.Start()
 			return
 		end
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
-		local offset = root and (root.Position - Gems.Merchant.Position) * Vector3.new(1, 0, 1)
+		local offset = root and shopPosition and (root.Position - shopPosition) * Vector3.new(1, 0, 1)
 		if not offset or offset.Magnitude > 22 then
 			close()
 		end

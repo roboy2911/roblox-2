@@ -20,6 +20,10 @@ return {
 		GemMerchant = { Model = 74160973079783, Texture = 127106430212570 },
 		Tree = { Model = 124147782165793, Texture = 71192615251219 },
 		EmberGem = { Model = 77433286267541, Texture = 76636422133075 },
+		IronSword = { Model = 112163897921209, Texture = 93415184981749 },
+		BattleAxe = { Model = 105952758718979, Texture = 87955386638853 },
+		Blacksmith = { Model = 71944898557943, Texture = 93280765192640 },
+		Anvil = { Model = 118542058241286, Texture = 137783339700287 },
 	},
 	Images = {
 		FxSpark = 107224043611000,

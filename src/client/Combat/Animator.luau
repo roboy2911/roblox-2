@@ -283,7 +283,22 @@ function Animator.Play(character: Model, name: string)
 	for joint, values in state.Current do
 		startPose[joint] = values
 	end
-	local trail = animation.Trail and getTrail(state, animation.Trail.Hand)
+	local trail: Trail? = nil
+	if animation.Trail and animation.Trail.Hand == "Weapon" then
+		-- The trail along the held weapon's blade (made by the server).
+		local weapon = character:FindFirstChild("EquippedWeapon")
+		local found = weapon and weapon:FindFirstChild("WeaponTrail", true)
+		if found and found:IsA("Trail") then
+			trail = found
+			found.FaceCamera = true
+			found.LightEmission = 0.6
+			found.TextureMode = Enum.TextureMode.Stretch
+			found.Color = ColorSequence.new(Color3.fromRGB(235, 240, 255))
+			found.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) })
+		end
+	elseif animation.Trail then
+		trail = getTrail(state, animation.Trail.Hand)
+	end
 	if trail and trail.Texture == "" then
 		trail.Texture = Images.Get("FxTrail") -- may not have been ready earlier
 	end

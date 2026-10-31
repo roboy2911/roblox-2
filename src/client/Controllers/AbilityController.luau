@@ -1,18 +1,16 @@
--- Gem moves on Z / X / C, plus the ability bar above the HUD.
---
--- Pressing a key checks (from what the server tells us) that you have a
--- gem, the level, the energy, and that the move is off cooldown. Then it
--- plays the cast animation right away and asks the server to cast.
---   Z  Fireball: flies toward your mouse
---   X  Flame Dash: dashes the way you're moving (or facing)
---   C  Fire Ring: blast around you
+-- Build slots and their moves.
+--   1 / 2 / 3   pick your combat style, weapon or gem (hotbar above the moves)
+--   Z / X / C   the selected slot's moves
+-- A press checks level, energy and cooldown (from what the server tells
+-- us), plays the animation right away and asks the server to cast.
+-- Dashes move you here, since your own client controls your character.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
-local Gems = require(ReplicatedStorage.Shared.Config.Gems)
+local Loadout = require(ReplicatedStorage.Shared.Loadout)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local CombatFolder = script.Parent.Parent.Combat
 local AbilityEffects = require(CombatFolder.AbilityEffects)
@@ -23,7 +21,7 @@ local player = Players.LocalPlayer
 
 local KEYS = { "Z", "X", "C" }
 local KEYCODES = { [Enum.KeyCode.Z] = "Z", [Enum.KeyCode.X] = "X", [Enum.KeyCode.C] = "C" }
-local ANIMATIONS = { Fireball = "CastFireball", ["Flame Dash"] = "FlameDash", ["Fire Ring"] = "FireRing" }
+local SLOT_KEYS = { [Enum.KeyCode.One] = "Style", [Enum.KeyCode.Two] = "Weapon", [Enum.KeyCode.Three] = "Gem" }
 
 local COLORS = {
 	Panel = Color3.fromRGB(28, 22, 18),
@@ -38,8 +36,13 @@ local AbilityController = {}
 local pending: { [string]: number } = {} -- stops double presses before the server answers
 
 local function currentMove(key: string)
-	local gem = Gems.List[player:GetAttribute("Gem") or ""]
-	return gem and gem.Moves[key], gem
+	local state = Loadout.Of(player)
+	local moves = Loadout.Moves(state)
+	return moves and moves[key], state
+end
+
+local function cooldownName(key: string): string
+	return ("CD_%s_%s"):format(player:GetAttribute("Slot") or "Style", key)
 end
 
 -- Where the mouse points in the world (or straight ahead on touch screens).
@@ -66,7 +69,7 @@ local function canUse(key: string): (boolean, any)
 		return false, move
 	end
 	local now = workspace:GetServerTimeNow()
-	if now < (player:GetAttribute("CD_" .. key) or 0) or os.clock() < (pending[key] or 0) then
+	if now < (player:GetAttribute(cooldownName(key)) or 0) or os.clock() < (pending[(player:GetAttribute("Slot") or "") .. key] or 0) then
 		return false, move
 	end
 	if (player:GetAttribute("Energy") or 0) < move.Energy then
@@ -86,13 +89,13 @@ local function use(key: string)
 	if not ok then
 		return
 	end
-	pending[key] = os.clock() + 0.4
+	pending[(player:GetAttribute("Slot") or "") .. key] = os.clock() + 0.4
 
-	if move.Name == "Fireball" then
+	if move.Kind == "Projectile" then
 		local aim = aimPoint(root)
 		Movement.Face(humanoid, root, aim - root.Position, (move.CastTime or 0.15) + 0.25)
 		Remotes.UseAbility:FireServer(key, aim)
-	elseif move.Name == "Flame Dash" then
+	elseif move.Kind == "Dash" then
 		local direction = humanoid.MoveDirection * Vector3.new(1, 0, 1)
 		if direction.Magnitude < 0.1 then
 			direction = root.CFrame.LookVector * Vector3.new(1, 0, 1)
@@ -101,12 +104,20 @@ local function use(key: string)
 		Movement.Face(humanoid, root, direction, move.DashTime + 0.1)
 		Remotes.UseAbility:FireServer(key, direction)
 		Movement.Burst(root, direction, move.Distance / move.DashTime, move.DashTime)
+	elseif move.Kind == "Flurry" then
+		-- Hit whatever you're facing (or the mouse direction).
+		local aim = aimPoint(root) - root.Position
+		local facing = aim * Vector3.new(1, 0, 1)
+		if facing.Magnitude < 0.1 then
+			facing = root.CFrame.LookVector
+		end
+		Movement.Face(humanoid, root, facing, (move.Delay or 0) + (move.Hits or 1) * (move.Interval or 0) + 0.2)
+		Remotes.UseAbility:FireServer(key, facing)
 	else
 		Remotes.UseAbility:FireServer(key)
 	end
-	local animation = ANIMATIONS[move.Name]
-	if animation then
-		Animator.Play(character :: Model, animation)
+	if move.Animation then
+		Animator.Play(character :: Model, move.Animation)
 	end
 end
 
@@ -132,7 +143,7 @@ local function label(props: { [string]: any }): TextLabel
 	return l
 end
 
-local function buildBar(): (Frame, TextLabel, { [string]: Slot })
+local function buildBar(): (Frame, { [string]: TextButton }, { [string]: Slot })
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "AbilityBar"
 	gui.ResetOnSpawn = false
@@ -141,12 +152,33 @@ local function buildBar(): (Frame, TextLabel, { [string]: Slot })
 	local bar = Instance.new("Frame")
 	bar.AnchorPoint = Vector2.new(0.5, 1)
 	bar.Position = UDim2.new(0.5, 0, 1, -146) -- above the HUD and its gold counter
-	bar.Size = UDim2.fromOffset(3 * 78 + 2 * 8, 104)
+	bar.Size = UDim2.fromOffset(3 * 78 + 2 * 8, 102)
 	bar.BackgroundTransparency = 1
-	bar.Visible = false
 	bar.Parent = gui
 
-	local title = label({ Size = UDim2.new(1, 0, 0, 20), Font = Enum.Font.Fantasy, TextSize = 20, TextColor3 = COLORS.Border, Parent = bar })
+	-- Hotbar: one tab per build slot (keys 1, 2, 3).
+	local tabs = {}
+	for i, slotName in Loadout.Slots do
+		local tab = Instance.new("TextButton")
+		tab.Position = UDim2.fromOffset((i - 1) * 86, 0)
+		tab.Size = UDim2.fromOffset(78, 20)
+		tab.BackgroundColor3 = COLORS.Panel
+		tab.BackgroundTransparency = 0.15
+		tab.Font = Enum.Font.GothamBold
+		tab.TextSize = 11
+		tab.TextColor3 = COLORS.Text
+		tab.TextTruncate = Enum.TextTruncate.AtEnd
+		tab.Parent = bar
+		corner(tab, 6)
+		local tabStroke = Instance.new("UIStroke")
+		tabStroke.Color = COLORS.Border
+		tabStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		tabStroke.Parent = tab
+		tab.Activated:Connect(function()
+			Remotes.SelectSlot:FireServer(slotName)
+		end)
+		tabs[slotName] = tab
+	end
 
 	local slots = {}
 	for i, key in KEYS do
@@ -186,12 +218,16 @@ local function buildBar(): (Frame, TextLabel, { [string]: Slot })
 
 		slots[key] = { Frame = frame :: any, Name = name, Cost = cost, Shade = shade, Timer = timer, Lock = lock }
 	end
-	return bar, title, slots
+	return bar, tabs, slots
 end
 
 function AbilityController.Start()
 	AbilityEffects.Start()
-	local bar, title, slots = buildBar()
+	local _, tabs, slots = buildBar()
+	pcall(function()
+		-- Number keys pick build slots, not backpack tools.
+		game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
+	end)
 
 	UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		if gameProcessed then
@@ -201,21 +237,29 @@ function AbilityController.Start()
 		if key then
 			use(key)
 		end
+		local slotName = SLOT_KEYS[input.KeyCode]
+		if slotName and slotName ~= player:GetAttribute("Slot") then
+			Remotes.SelectSlot:FireServer(slotName)
+		end
 	end)
 
 	RunService.RenderStepped:Connect(function()
-		local _, gem = currentMove("Z")
-		bar.Visible = gem ~= nil
-		if not gem then
-			return
+		local _, state = currentMove("Z")
+		for i, slotName in Loadout.Slots do
+			local tab = tabs[slotName]
+			local name = Loadout.SlotLabel(state, slotName)
+			tab.Text = ("%d  %s"):format(i, if name ~= "" then name else "-")
+			local selected = state.Slot == slotName
+			tab.BackgroundColor3 = if selected then COLORS.Border else COLORS.Panel
+			tab.TextColor3 = if selected then COLORS.Panel elseif name == "" then COLORS.Muted else COLORS.Text
 		end
-		title.Text = gem.DisplayName
+		local moves = Loadout.Moves(state) or {}
 		local now = workspace:GetServerTimeNow()
 		local level = player:GetAttribute("Level") or 1
 		local energy = player:GetAttribute("Energy") or 0
 		for _, key in KEYS do
 			local slot = slots[key]
-			local move = gem.Moves[key]
+			local move = moves[key]
 			slot.Frame.Visible = move ~= nil
 			if not move then
 				continue
@@ -225,7 +269,7 @@ function AbilityController.Start()
 			local locked = level < move.Level
 			slot.Lock.Visible = locked
 			slot.Lock.Text = ("Lv. %d"):format(move.Level)
-			local left = (player:GetAttribute("CD_" .. key) or 0) - now
+			local left = (player:GetAttribute(cooldownName(key)) or 0) - now
 			if not locked and left > 0 then
 				slot.Shade.Size = UDim2.fromScale(1, math.clamp(left / move.Cooldown, 0, 1))
 				slot.Timer.Text = ("%.1f"):format(left)

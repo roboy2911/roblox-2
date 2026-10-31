@@ -9,6 +9,7 @@ local order = {
 	"LevelingService",
 	"CombatService",
 	"EnergyService",
+	"LoadoutService",
 	"GemService",
 	"TrainingGround",
 	"QuestService",
