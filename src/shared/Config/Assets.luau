@@ -24,6 +24,7 @@ return {
 		BattleAxe = { Model = 105952758718979, Texture = 87955386638853 },
 		Blacksmith = { Model = 71944898557943, Texture = 93280765192640 },
 		Anvil = { Model = 118542058241286, Texture = 137783339700287 },
+		BanditCaptain = { Model = 124711161031328, Texture = 117948995731745 },
 	},
 	Images = {
 		FxSpark = 107224043611000,

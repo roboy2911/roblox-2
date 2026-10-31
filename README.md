@@ -13,6 +13,7 @@ Build order steps from the design doc:
 - [x] **4. Quests:** Elder Bram in Millbrook gives a Rats quest and a Bandit Thugs quest (Lv. 10+).
 - [x] **5. First gem:** Ember Gem (Fireball, Flame Dash, Fire Ring) with energy and cooldowns; found under trees or bought from the Gem Merchant.
 - [x] **6. Weapons and shop:** Iron Sword and Battle Axe from Blacksmith Torvin; slots 1 Style, 2 Weapon, 3 Gem.
+- [x] **7. First boss:** Bandit Captain (Lv. 25) with Cleave and Leap Slam, boss HP bar, quest from Bram.
 
 ## Setup
 
@@ -94,6 +95,14 @@ Build order steps from the design doc:
 - Brawler: Z Punch Flurry, X Shoulder Charge. Sword: Z Slash Combo, X Lunge.
   Axe: Z Overhead Chop, X Whirlwind.
 - Studio shortcuts: `/weapon` (sword), `/weapon axe`.
+
+**Step 7, Bandit Captain**
+
+- Lives in **Captain's Clearing**, past the Bandit Camp. Lv. 25, 2,500 HP, respawns every 10 minutes.
+- Attacks: **Cleave** (red area in front, then a wide slash) and **Leap Slam** (red circle under
+  you, he jumps and smashes it). Get out of the red. Hits don't stun or interrupt him.
+- Drops 1,500 XP and 400 to 600 gold. Bram's quest **The Bandit Captain** (Lv. 20+) pays extra.
+- Studio shortcut: `/spawnboss`.
 
 ## Project layout
 

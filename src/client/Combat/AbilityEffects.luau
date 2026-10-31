@@ -408,6 +408,19 @@ function AbilityEffects.Start()
 		end
 	end)
 	RunService.RenderStepped:Connect(stepProjectiles)
+
+	-- Boss slam landing: a ring of dust, an impact and a big jolt.
+	Remotes.EnemyFx.OnClientEvent:Connect(function(kind: string, position: Vector3, radius: number)
+		if kind ~= "Slam" then
+			return
+		end
+		for i = 1, 10 do
+			local angle = i / 10 * math.pi * 2
+			dustPuff(position + Vector3.new(math.cos(angle), 0, math.sin(angle)) * radius * 0.7, 2, 5)
+		end
+		HitEffects.Impact(position + Vector3.new(0, 1, 0), Vector3.yAxis, true)
+		nearbyShake(position, 2.5, radius * 4)
+	end)
 end
 
 return AbilityEffects

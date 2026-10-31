@@ -18,9 +18,12 @@ local Feedback = {}
 
 local hurtFlash: Frame
 
-local function onPlayerHit(_enemy: Model, damage: number)
+local function onPlayerHit(_enemy: Model, damage: number, push: Vector3?)
 	local character = player.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if root and typeof(push) == "Vector3" then
+		root.AssemblyLinearVelocity = push -- knocked back by a boss attack
+	end
 	if root then
 		HitEffects.FloatingText(root.Position + Vector3.new(0, 3, 0), "-" .. damage, HURT_COLOR, 30)
 	end

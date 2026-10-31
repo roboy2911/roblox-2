@@ -30,7 +30,7 @@ ASSETS_LUAU = os.path.join(ROOT, "src", "shared", "Config", "Assets.luau")
 
 MODELS = ["TrainingDummy", "Rat", "Barrel", "HayBale", "Crate", "Tent", "Campfire", "Sign", "DirtPad", "Stall",
           "QuestGiver", "BanditThug", "GemMerchant", "Tree", "EmberGem",
-          "IronSword", "BattleAxe", "Blacksmith", "Anvil"]
+          "IronSword", "BattleAxe", "Blacksmith", "Anvil", "BanditCaptain"]
 IMAGES = ["FxSpark", "FxDust", "FxGlow", "FxRing", "FxTrail", "FxFlame"]
 
 

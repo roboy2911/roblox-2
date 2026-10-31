@@ -58,6 +58,9 @@ function Damageable.OnDamaged(model: Model, callback: DamagedCallback)
 end
 
 function Damageable.Stun(model: Model, seconds: number)
+	if model:GetAttribute("StunResist") then
+		return -- bosses can't be stun-locked
+	end
 	local untilTime = workspace:GetServerTimeNow() + seconds
 	model:SetAttribute("StunnedUntil", math.max(untilTime, model:GetAttribute("StunnedUntil") or 0))
 end

@@ -35,6 +35,7 @@ return {
 	Attack = remote("Attack"), -- client -> server: player clicked (with aim direction)
 	Swing = remote("Swing"), -- server -> all: someone swung (to play their animation)
 	HitEffect = remote("HitEffect"), -- server -> all: a hit landed (effects, damage numbers)
+	EnemyFx = remote("EnemyFx"), -- server -> all: boss attack effects (slam landing)
 	PlayerHit = remote("PlayerHit"), -- server -> player: an enemy hit you
 	Reward = remote("Reward"), -- server -> player: XP and gold earned (floating text)
 	QuestDialog = remote("QuestDialog"), -- server -> player: open a quest giver's dialog

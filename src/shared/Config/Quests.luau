@@ -8,7 +8,7 @@ Quests.Givers = {
 		DisplayName = "Elder Bram",
 		Greeting = "Welcome to Millbrook, traveler. We could use a strong arm around here.",
 		Position = Vector3.new(18, 0, 4), -- on the ground near spawn
-		Quests = { "RatProblem", "BanditTrouble" },
+		Quests = { "RatProblem", "BanditTrouble", "CaptainHunt" },
 	},
 }
 
@@ -30,6 +30,15 @@ Quests.List = {
 		MinLevel = 10,
 		XP = 990,
 		Gold = 200,
+	},
+	CaptainHunt = {
+		Title = "The Bandit Captain",
+		Description = "Their leader hides in a clearing past the camp. Take him down.",
+		Enemy = "BanditCaptain",
+		Count = 1,
+		MinLevel = 20,
+		XP = 3000,
+		Gold = 800,
 	},
 }
 

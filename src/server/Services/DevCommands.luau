@@ -6,6 +6,7 @@
 --   /gem          eat the Ember Gem (/gem none removes it)
 --   /spawngem     put a gem under a tree right now
 --   /weapon axe   get a weapon (sword or axe)
+--   /spawnboss    bring the Bandit Captain back now
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -21,6 +22,7 @@ local QuestService = require(script.Parent.QuestService)
 local GemService = require(script.Parent.GemService)
 local GemSpawner = require(script.Parent.GemSpawner)
 local LoadoutService = require(script.Parent.LoadoutService)
+local EnemyService = require(script.Parent.EnemyService)
 
 local DevCommands = {}
 
@@ -52,6 +54,11 @@ local commands = {
 	end,
 	weapon = function(player: Player, _: number?, word: string?)
 		LoadoutService.GiveWeapon(player, if word == "axe" then "BattleAxe" else "IronSword")
+	end,
+	spawnboss = function(player: Player)
+		if EnemyService.SpawnBosses() == 0 then
+			Remotes.Notify:FireClient(player, "The boss is already alive")
+		end
 	end,
 	spawngem = function(player: Player)
 		if not GemSpawner.SpawnGem() then

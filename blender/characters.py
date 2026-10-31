@@ -6,6 +6,7 @@ QuestGiver parts: Body, Head
 GemMerchant parts: Body, Head
 Blacksmith parts: Body, Head
 BanditThug parts: Torso, Head, ArmL, ArmR (holds the sword), LegL, LegR
+BanditCaptain parts: same as BanditThug
 """
 
 import math
@@ -191,10 +192,77 @@ def blacksmith():
     c.join(head, "Head")
 
 
+def bandit_captain():
+    skin = c.skin("Skin", color=(0.72, 0.5, 0.36))
+    coat = c.cloth("Coat", color=(0.5, 0.08, 0.07), weave=60)
+    trim = c.cloth("Trim", color=(0.8, 0.62, 0.22), weave=90)
+    shirt = c.cloth("Shirt", color=(0.15, 0.13, 0.12), weave=70)
+    pants = c.cloth("Pants", color=(0.18, 0.16, 0.15), weave=80)
+    leather = c.skin("Leather", color=(0.22, 0.13, 0.06))
+    hat = c.cloth("Hat", color=(0.12, 0.1, 0.09), weave=50)
+    steel = c.metal("Steel", color=(0.55, 0.57, 0.6))
+    gold = c.metal("Gold", color=(0.85, 0.62, 0.2), scratches=0.15)
+    beard = c.fur("Beard", color=(0.12, 0.08, 0.05), streak_axis="Z")
+    eye = c.solid("Eye", (0.04, 0.04, 0.04), 0.2)
+
+    c.join([
+        c.paint(c.cylinder(0.85, 2.0, (0, 0, 3.3), verts=14, top_radius=1.05), shirt),
+        c.paint(c.sphere(1, (0, 0, 4.2), scale=(1.15, 0.6, 0.38)), coat),
+        # Long coat: open at the front, flaring down past the knees.
+        c.paint(c.cylinder(1.05, 3.0, (0, 0.12, 2.6), verts=16, top_radius=0.95), coat),
+        c.paint(c.cylinder(1.07, 0.15, (0, 0.12, 1.15), verts=16), trim),
+        c.paint(c.cylinder(0.92, 0.28, (0, 0, 2.55), verts=14), leather),
+        c.paint(c.box((0.38, 0.1, 0.3), (0, -0.92, 2.55)), gold),
+        # Shoulder pads.
+        c.paint(c.sphere(0.45, (1.0, 0, 4.15), scale=(1.1, 1, 0.6)), trim),
+        c.paint(c.sphere(0.45, (-1.0, 0, 4.15), scale=(1.1, 1, 0.6)), trim),
+    ], "Torso")
+
+    head = [
+        c.paint(c.sphere(0.5, (0, 0, 4.85)), skin),
+        c.paint(c.sphere(0.46, (0, -0.12, 4.58), scale=(1.05, 0.85, 0.65)), beard),
+        c.paint(c.sphere(0.12, (0, -0.5, 4.8), segments=8, rings=6), skin),
+        # Tricorn hat.
+        c.paint(c.cylinder(0.85, 0.1, (0, 0, 5.2), verts=3), hat),
+        c.paint(c.cylinder(0.45, 0.5, (0, 0, 5.45), verts=12, top_radius=0.38), hat),
+        c.paint(c.torus(0.47, 0.04, (0, 0, 5.25), major_segments=16, minor_segments=4), trim),
+        # Eye patch and strap.
+        c.paint(c.box((0.2, 0.05, 0.16), (-0.17, -0.47, 4.92)), leather),
+        c.paint(c.torus(0.5, 0.025, (0, 0, 4.98), rot=(0, math.radians(-12), 0), major_segments=16, minor_segments=4), leather),
+    ]
+    head.append(c.paint(c.sphere(0.065, (0.17, -0.45, 4.92), segments=8, rings=6), eye))
+    head.append(c.paint(c.box((0.22, 0.06, 0.05), (0.17, -0.43, 5.04), rot=(0, math.radians(-20), 0)), beard))
+    c.join(head, "Head")
+
+    for name, side in (("ArmL", -1), ("ArmR", 1)):
+        arm = [
+            c.paint(c.cylinder(0.3, 0.8, (1.12 * side, 0, 3.8), verts=10), coat),
+            c.paint(c.cylinder(0.26, 0.9, (1.12 * side, 0, 2.95), verts=10), shirt),
+            c.paint(c.cylinder(0.3, 0.32, (1.12 * side, 0, 2.6), verts=10), trim),
+            c.paint(c.sphere(0.27, (1.12 * side, -0.05, 2.3), segments=10, rings=8), skin),
+        ]
+        if side == 1:
+            # Big curved cutlass held forward.
+            arm += [
+                c.paint(c.cylinder(0.08, 0.55, (1.12, -0.1, 2.3), rot=(math.radians(90), 0, 0), verts=8), leather),
+                c.paint(c.torus(0.22, 0.04, (1.12, -0.38, 2.3), rot=(0, math.radians(90), 0), major_segments=12, minor_segments=4), gold),
+                c.paint(c.box((0.1, 2.9, 0.38), (1.12, -1.95, 2.38), rot=(math.radians(-6), 0, 0)), steel),
+            ]
+        c.join(arm, name)
+
+    for name, side in (("LegL", -1), ("LegR", 1)):
+        c.join([
+            c.paint(c.cylinder(0.36, 1.9, (0.42 * side, 0, 1.45), verts=10, top_radius=0.4), pants),
+            c.paint(c.cylinder(0.4, 1.0, (0.42 * side, -0.05, 0.55), verts=10), leather),
+            c.paint(c.box((0.55, 0.95, 0.3), (0.42 * side, -0.12, 0.15)), leather),
+        ], name)
+
+
 CHARACTERS = {
     "QuestGiver": (quest_giver, {"camera": (4.5, -7.5, 4.2), "target": (0, 0, 2.9), "size": (480, 640)}),
     "GemMerchant": (gem_merchant, {"camera": (4.5, -7.5, 4.0), "target": (0, 0, 2.6), "size": (480, 640)}),
     "Blacksmith": (blacksmith, {"camera": (4.5, -7.5, 4.0), "target": (0, 0, 2.7), "size": (480, 640)}),
+    "BanditCaptain": (bandit_captain, {"camera": (5.5, -8, 4.5), "target": (0, -0.6, 3.0), "size": (480, 640)}),
     "BanditThug": (bandit_thug, {"camera": (5, -7.5, 4.2), "target": (0, -0.6, 2.8), "size": (480, 640)}),
 }
 

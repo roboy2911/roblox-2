@@ -52,6 +52,41 @@ Enemies.Types = {
 		Gold = { 25, 40 },
 		RespawnTime = 15,
 	},
+
+	-- First boss. Attacks follow Pattern in order, then repeat:
+	--   Cleave: a wide slash in front (red area shows where)
+	--   Slam:   leaps onto the target's spot and smashes the ground (red circle)
+	BanditCaptain = {
+		DisplayName = "Bandit Captain",
+		Model = "BanditCaptain",
+		Rig = "Biped",
+		BodyPart = "Torso",
+		Height = 8,
+		Level = 25,
+		MaxHealth = 2500,
+		Defense = 20,
+		WalkSpeed = 13,
+		WanderSpeed = 5,
+
+		AggroRange = 30,
+		LeashRange = 45,
+		AttackRange = 9, -- how close he walks before attacking
+		AttackDamage = 25,
+		AttackWindup = 0.7,
+		AttackCooldown = 1.3,
+		Knockback = 0.1,
+
+		Boss = true, -- big HP bar at the top of the screen; hits don't stun or interrupt him
+		Pattern = { "Cleave", "Cleave", "Slam" },
+		Attacks = {
+			Cleave = { Windup = 0.75, Range = 9, Radius = 11, Arc = -0.1, Damage = 25 },
+			Slam = { Windup = 0.5, LeapTime = 0.75, Range = 34, Radius = 11, Damage = 35 },
+		},
+
+		XP = 1500,
+		Gold = { 400, 600 },
+		RespawnTime = 600, -- 10 minutes
+	},
 }
 
 -- Fixed spawn areas. Center is on the ground (Y is found automatically).
@@ -73,6 +108,14 @@ Enemies.SpawnAreas = {
 		Count = 5,
 		Props = { "Tent", "Crate", "Barrel", "Tent", "Crate", "Crate", "Tent", "Barrel" },
 		CenterProp = "Campfire",
+	},
+	{
+		Name = "Captain's Clearing",
+		Enemy = "BanditCaptain",
+		Center = Vector3.new(122, 0, 15),
+		Radius = 6,
+		Count = 1,
+		Props = { "Tent", "Crate", "Barrel", "Crate", "Tent", "Barrel" },
 	},
 }
 

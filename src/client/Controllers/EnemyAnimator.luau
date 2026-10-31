@@ -108,6 +108,33 @@ local function slashPose(model: Model, serverNow: number): (number, number, numb
 	return 20 * c, 22 * c, -10 * c
 end
 
+-- Boss leap slam: crouch, sword up while flying, smash down on landing.
+-- Returns sword-arm angle, torso twist, torso lean and crouch (studs).
+local function slamPose(model: Model, serverNow: number): (number, number, number, number)?
+	if model:GetAttribute("AttackKind") ~= "Slam" then
+		return nil
+	end
+	local start = model:GetAttribute("AttackStart") or 0
+	local windup = model:GetAttribute("AttackWindup") or 0.5
+	local leap = model:GetAttribute("AttackLeap") or 0.75
+	local t = serverNow - start
+	if start <= 0 or t < 0 or t > windup + leap + 0.6 then
+		return nil
+	end
+	if t < windup then
+		local a = smooth(t / windup)
+		return 60 * a, 0, -15 * a, -0.6 * a
+	elseif t < windup + leap then
+		local a = smooth((t - windup) / leap)
+		return 60 + 110 * a, 0, -15 + 25 * a, -0.6 + 0.6 * a
+	elseif t < windup + leap + 0.1 then
+		local b = (t - windup - leap) / 0.1
+		return 170 - 140 * b, 0, 10 - 30 * b, -0.7 * b
+	end
+	local c = 1 - smooth((t - windup - leap - 0.1) / 0.5)
+	return 30 * c, 0, -20 * c, -0.7 * c
+end
+
 local function animateBiped(rig: Rig, model: Model, amount: number, t: number, serverNow: number)
 	local swing = math.sin(rig.Phase) * math.rad(35) * amount
 	set(rig, "LegL", CFrame.Angles(swing, 0, 0))
@@ -115,10 +142,16 @@ local function animateBiped(rig: Rig, model: Model, amount: number, t: number, s
 	set(rig, "ArmL", CFrame.Angles(-swing * 0.8, 0, math.rad(-4)))
 
 	local arm, twist, lean = slashPose(model, serverNow)
+	local crouch = 0
+	local slamArm, slamTwist, slamLean, slamCrouch = slamPose(model, serverNow)
+	if slamArm then
+		arm, twist, lean, crouch = slamArm, slamTwist, slamLean, slamCrouch
+		set(rig, "ArmL", CFrame.Angles(math.rad(arm * 0.9), 0, math.rad(-4)))
+	end
 	set(rig, "ArmR", CFrame.Angles(math.rad(arm) + swing * 0.3, 0, math.rad(4)))
 
 	local bob = math.abs(math.sin(rig.Phase)) * 0.1 * amount + math.sin(t * 2) * 0.02
-	set(rig, "Torso", CFrame.new(0, bob, 0) * CFrame.Angles(math.rad(lean), math.rad(twist), 0))
+	set(rig, "Torso", CFrame.new(0, bob + crouch, 0) * CFrame.Angles(math.rad(lean), math.rad(twist), 0))
 
 	local look = (1 - amount) * math.sin(t * 0.7) * math.rad(20)
 	set(rig, "Head", CFrame.Angles(0, look - math.rad(twist) * 0.5, 0))

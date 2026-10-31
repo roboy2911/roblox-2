@@ -2,7 +2,7 @@
 
 local Controllers = script.Parent.Controllers
 
-for _, name in { "HUD", "CombatController", "HealthBars", "EnemyAnimator", "Feedback", "QuestUI", "NpcController", "AbilityController", "ShopUI", "WorldEffects" } do
+for _, name in { "HUD", "CombatController", "HealthBars", "EnemyAnimator", "Feedback", "QuestUI", "NpcController", "AbilityController", "ShopUI", "WorldEffects", "BossBar" } do
 	-- If one fails, warn and keep going so the rest still start.
 	local ok, err = pcall(function()
 		local controller = require(Controllers[name]) :: any
