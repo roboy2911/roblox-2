@@ -1,10 +1,11 @@
--- Click to attack. Plays the punch right away (so it feels instant), tells
--- the server, and shows damage numbers when the server confirms a hit.
--- Punches are done by rotating the shoulder joints, so no animation assets
--- are needed yet.
+-- Click to attack. Tells the server, plays the punch right away (so it
+-- feels instant), and shows damage numbers when the server confirms a hit.
+-- Punches add a rotation to the shoulder joints every frame, on top of the
+-- normal walk/idle animation, so no animation assets are needed yet.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
@@ -14,14 +15,18 @@ local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local player = Players.LocalPlayer
 local style = Combat.Styles[Combat.DefaultStyle]
 
+local PUNCH_OUT_TIME = 0.07
+local HEAVY_OUT_TIME = 0.1
+local PUNCH_BACK_TIME = 0.18
+
 local CombatController = {}
 
 local comboIndex = 0
 local lastSwing = 0
 local readyAt = 0
 
-local originalC0: { [Motor6D]: CFrame } = setmetatable({}, { __mode = "k" }) :: any
-local activeTweens: { [Motor6D]: Tween } = setmetatable({}, { __mode = "k" }) :: any
+type Punch = { Start: number, OutTime: number, Rotation: CFrame, Base: CFrame?, Written: CFrame? }
+local activePunches: { [Motor6D]: Punch } = {}
 
 local function shoulder(character: Model, side: string): (Motor6D?, boolean)
 	local upperArm = character:FindFirstChild(side .. "UpperArm")
@@ -30,6 +35,46 @@ local function shoulder(character: Model, side: string): (Motor6D?, boolean)
 	end
 	local torso = character:FindFirstChild("Torso")
 	return torso and torso:FindFirstChild(side .. " Shoulder") :: Motor6D?, false
+end
+
+-- How far into the punch we are: 0 -> 1 quickly, then back to 0.
+local function punchAmount(punch: Punch, now: number): number?
+	local t = now - punch.Start
+	if t < punch.OutTime then
+		local a = t / punch.OutTime
+		return 1 - (1 - a) * (1 - a) -- ease out
+	end
+	t -= punch.OutTime
+	if t < PUNCH_BACK_TIME then
+		local a = t / PUNCH_BACK_TIME
+		return 1 - a * a * (3 - 2 * a) -- smooth return
+	end
+	return nil
+end
+
+-- Runs after the character's animations each frame and adds the punch on top.
+local function updatePunches()
+	local now = os.clock()
+	for motor, punch in activePunches do
+		pcall(function()
+			-- If no animation overwrote the joint since last frame, start from
+			-- the pose before our change so the rotation doesn't stack up.
+			local base = motor.Transform
+			if punch.Written and base == punch.Written then
+				base = punch.Base :: CFrame
+			end
+			local amount = punchAmount(punch, now)
+			if not amount or not motor.Parent then
+				motor.Transform = base
+				activePunches[motor] = nil
+				return
+			end
+			local pose = base:Lerp(base * punch.Rotation, amount)
+			motor.Transform = pose
+			punch.Base = base
+			punch.Written = pose
+		end)
+	end
 end
 
 -- Punches with one arm: quick out, slower back.
@@ -42,31 +87,23 @@ local function playPunch(character: Model, index: number)
 	if not motor then
 		return
 	end
-	if activeTweens[motor] then
-		activeTweens[motor]:Cancel()
-	end
-	local base = originalC0[motor] or motor.C0
-	originalC0[motor] = base
-
 	local reach = math.rad(if move.Heavy then 110 else 90)
-	local punch
+	local rotation
 	if isR15 then
-		punch = base * CFrame.Angles(reach, 0, 0)
+		rotation = CFrame.Angles(reach, 0, 0)
 	else
 		-- R6 shoulders rotate around their own Z axis; left and right are mirrored.
-		punch = base * CFrame.Angles(0, 0, if move.Arm == "Right" then reach else -reach)
+		rotation = CFrame.Angles(0, 0, if move.Arm == "Right" then reach else -reach)
 	end
-
-	local out = TweenService:Create(motor, TweenInfo.new(if move.Heavy then 0.1 else 0.07, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { C0 = punch })
-	local back = TweenService:Create(motor, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), { C0 = base })
-	activeTweens[motor] = out
-	out.Completed:Once(function(state)
-		if state == Enum.PlaybackState.Completed then
-			activeTweens[motor] = back
-			back:Play()
-		end
-	end)
-	out:Play()
+	local previous = activePunches[motor]
+	activePunches[motor] = {
+		Start = os.clock(),
+		OutTime = if move.Heavy then HEAVY_OUT_TIME else PUNCH_OUT_TIME,
+		Rotation = rotation,
+		-- Keep the last pose info so a punch that interrupts another doesn't stack.
+		Base = previous and previous.Base,
+		Written = previous and previous.Written,
+	}
 end
 
 local function tryAttack()
@@ -86,8 +123,9 @@ local function tryAttack()
 	lastSwing = now
 	readyAt = now + (if comboIndex == #style.Combo then style.ComboEndCooldown else style.SwingCooldown)
 
-	playPunch(character :: Model, comboIndex)
+	-- Tell the server first, so a visual glitch can never block the attack.
 	Remotes.Attack:FireServer()
+	playPunch(character :: Model, comboIndex)
 end
 
 local function flash(target: Model)
@@ -137,6 +175,8 @@ local function damageNumber(target: Model, amount: number, big: boolean)
 end
 
 function CombatController.Start()
+	RunService.Stepped:Connect(updatePunches)
+
 	UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		if gameProcessed then
 			return
